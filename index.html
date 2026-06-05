@@ -1,0 +1,422 @@
+<!doctype html><html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Тригонометрично судоку</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f7f3e9;--ink:#1f2a44;--ink2:#46536d;--accent:#b5532f;--accent2:#1f6f6b;--line:#cfc6b0;--clue-bg:#ece3cd;--figfill:#fbf7ec;--ok:#2f7d4f;--err:#c0392b;}
+*{box-sizing:border-box} html,body{margin:0;background:var(--paper);color:var(--ink);font-family:"Spectral",Georgia,serif;line-height:1.5}
+.wrap{max-width:920px;margin:0 auto;padding:36px 28px 64px}
+.masthead{border-bottom:3px double var(--ink);padding-bottom:16px}
+.kicker{font:600 12px/1 "Spectral";letter-spacing:.28em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(30px,5vw,46px);margin:.16em 0 .08em;letter-spacing:-.01em}
+.lead{color:var(--ink2);font-style:italic;max-width:66ch;margin:.2em 0 0}
+.rule{margin:16px 0 0;border:2px solid var(--accent2);border-radius:11px;background:#fff;padding:12px 15px}
+.rule h4{font-family:"Fraunces";margin:0 0 4px;color:var(--accent2);font-size:15px}
+.rule p{margin:0;font-size:13.5px}
+.rule .scale{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;font-family:"Fraunces";font-size:12.5px;color:var(--ink2)}
+.rule .scale b{background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px}
+.controls{display:flex;gap:18px;flex-wrap:wrap;margin:16px 0 0;align-items:flex-end}
+.cgroup{display:flex;flex-direction:column;gap:5px}
+.cgroup .lbl{font-family:"Fraunces";font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.seg{display:flex;border:1.5px solid var(--ink);border-radius:9px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:transparent;color:var(--ink);padding:8px 12px;font-size:13px}
+.seg button.active{background:var(--ink);color:#fff}
+.seg button:hover{background:var(--accent);color:#fff}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button.act{font-family:"Fraunces";font-weight:600;font-size:14px;border:2px solid var(--ink);background:var(--ink);color:#fff;padding:9px 16px;border-radius:9px;cursor:pointer}
+button.act.ghost{background:transparent;color:var(--ink)} button.act:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+button.small{font-family:"Fraunces";font-weight:600;border:1.5px solid var(--ink);background:transparent;color:var(--ink);padding:6px 11px;border-radius:8px;font-size:12.5px;cursor:pointer}
+button.small:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.note{font-size:12.5px;color:var(--ink2);font-style:italic}
+.level{margin-top:30px;break-inside:avoid;page-break-inside:avoid}
+.lvl-head{display:flex;align-items:center;gap:16px;border-top:2px solid var(--ink);padding-top:12px}
+.lvl-no{font-family:"Fraunces";font-weight:600;font-size:13px;letter-spacing:.2em;color:#fff;background:var(--accent);padding:7px 9px;border-radius:7px;white-space:nowrap}
+.lvl-meta h2{font-family:"Fraunces";font-weight:600;font-size:23px;margin:0}
+.lvl-meta p{margin:.22em 0 0;color:var(--ink2);font-size:14px}
+.lvl-body{display:flex;gap:24px;flex-wrap:wrap;margin-top:16px;align-items:flex-start}
+.left{flex:0 0 auto}
+.figbox{margin:0 0 12px;border:1px solid var(--line);border-radius:10px;background:var(--figfill);padding:6px 8px 2px}
+.figbox figcaption{font-family:"Fraunces";font-size:12px;color:var(--accent2);padding:3px 4px 0}
+.figbox svg{width:250px;height:auto;display:block}
+.figbox .fl{font:600 14px "Spectral";fill:var(--ink)} .figbox .fa{font:italic 15px "Spectral";fill:var(--accent)} .figbox .fv{font:600 12px "Fraunces";fill:var(--ink2)}
+.grid{--s:42px;display:grid;grid-template-columns:repeat(9,var(--s));grid-template-rows:repeat(9,var(--s));border:3px solid var(--ink);width:max-content;background:#fffdf7}
+.cell{border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:"Fraunces";position:relative}
+.cell.rb{border-right:2.5px solid var(--ink)} .cell.bb{border-bottom:2.5px solid var(--ink)}
+.cell.locked{background:repeating-linear-gradient(45deg,#efe7d4,#efe7d4 6px,#eae0c9 6px,#eae0c9 12px);color:var(--accent);font-size:13px;font-weight:600}
+.cell.tag{color:var(--accent2);font-size:13px;font-weight:600}
+.cell.tag.isgiven{background:var(--clue-bg)}
+.cell.given{background:var(--clue-bg);color:var(--accent2);font-weight:600;font-size:20px}
+.cell input{width:100%;height:100%;border:0;background:transparent;text-align:center;font-family:"Fraunces";font-size:20px;color:var(--ink);outline:none}
+.cell input:focus{background:#fff7e6}
+.cell.bad input{color:var(--err)} .cell.good input{color:var(--ok)}
+.cell .hand{font-size:11px;color:var(--ink2);position:absolute;top:1px;right:3px}
+.gridctl{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.gridmsg{font-size:13px;font-family:"Fraunces"} .gridmsg.ok{color:var(--ok)} .gridmsg.err{color:var(--err)}
+.tasks{flex:1 1 340px;min-width:300px}
+.tasks h3{font-family:"Fraunces";font-weight:600;font-size:18px;margin:0 0 3px}
+.prog{font-size:12.5px;color:var(--ink2);margin:0 0 8px}
+.tlist{list-style:none;margin:0;padding:0}
+.tlist li{display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px dotted var(--line)}
+.ttag{font-family:"Fraunces";font-weight:600;color:var(--accent);min-width:28px;padding-top:3px}
+.ttxt{flex:1;font-size:13px;line-height:1.45} .ttxt b{color:var(--ink)}
+.tin{width:56px;height:32px;border:1.5px solid var(--ink);border-radius:7px;text-align:center;font-family:"Fraunces";font-size:15px;background:#fff;outline:none}
+.tin:focus{border-color:var(--accent)} .tsolved .tin{border-color:var(--ok);color:var(--ok);background:#eef7f0}
+.tsolved .ttag::after{content:" ✓";color:var(--ok)} .tbad{border-color:var(--err)!important;background:#fbeeec!important}
+.divider{text-align:center;color:var(--accent);letter-spacing:.5em;margin:40px 0 0}
+.answerkey{margin-top:28px;border-top:3px double var(--ink);padding-top:16px}
+.answerkey[hidden]{display:none}
+.answerkey h2{font-family:"Fraunces";font-weight:600;font-size:22px;margin:0 0 4px}
+.keys{display:flex;gap:22px;flex-wrap:wrap;margin-top:14px}
+.keyblock{flex:1 1 250px} .keyblock h3{font-family:"Fraunces";font-size:15px;margin:0 0 3px}
+.keyblock .grid{--s:25px} .keyblock .cell{font-size:13px}
+.ansrow{font-family:"Fraunces";font-size:11.5px;color:var(--accent2);margin:0 0 8px;line-height:1.6}
+footer{margin-top:38px;border-top:1px solid var(--line);padding-top:12px;font-size:12px;color:var(--ink2);font-style:italic}
+.credit{margin:22px 0 2px;display:flex;justify-content:center}
+.credit .badge{display:inline-flex;align-items:center;gap:9px;font-family:"Fraunces";font-size:14.5px;color:var(--ink2);padding:7px 16px;border:1px solid var(--line);border-radius:999px;background:#fffdf7}
+.credit .badge b{color:var(--accent);font-weight:600} .credit .star{font-size:12px;color:#caa24a}
+.mast-row{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.mast-main{flex:1 1 320px;min-width:0}
+.mascot-wrap{position:relative;flex:0 0 auto;width:96px;height:96px;cursor:pointer;user-select:none;-webkit-user-select:none;margin-top:6px}
+.m-svg{width:96px;height:96px;display:block;transform-origin:50% 82%;animation:mbob 3.2s ease-in-out infinite}
+@keyframes mbob{0%,100%{transform:translateY(0) rotate(-2.5deg)}50%{transform:translateY(-5px) rotate(2.5deg)}}
+.m-eyes{transform-box:fill-box;transform-origin:center;animation:mblink 4.6s infinite}
+@keyframes mblink{0%,90%,100%{transform:scaleY(1)}95%{transform:scaleY(.12)}}
+.m-bubble{position:absolute;bottom:100%;left:50%;margin-bottom:9px;transform:translate(-50%,6px) scale(.9);background:linear-gradient(135deg,#ffce3a,#f59e0b);color:#3a2a0c;font-weight:600;font-family:"Fraunces";font-size:12.5px;padding:6px 12px;border-radius:11px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;box-shadow:0 6px 16px rgba(245,158,11,.4);z-index:5}
+.m-bubble::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#f59e0b}
+.m-bubble.show{opacity:1;transform:translate(-50%,0) scale(1);animation:bubblepop .5s cubic-bezier(.2,1.5,.4,1)}
+.m-bubble .ch{display:inline-block;opacity:0;transform:translateY(10px) scale(.4);will-change:transform,opacity;animation:chpop .42s cubic-bezier(.2,1.7,.35,1) forwards}
+@keyframes chpop{60%{opacity:1;transform:translateY(-3px) scale(1.14)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes bubblepop{0%{transform:translate(-50%,8px) scale(.6)}55%{transform:translate(-50%,-2px) scale(1.06)}100%{transform:translate(-50%,0) scale(1)}}
+.spark{position:absolute;left:50%;top:42%;color:#caa24a;font-size:13px;pointer-events:none;will-change:transform,opacity}
+.m-hint{position:absolute;top:100%;left:50%;margin-top:6px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:4px;background:var(--accent);color:#fff;font-family:"Fraunces";font-weight:600;font-size:10.5px;padding:3px 9px;border-radius:999px;white-space:nowrap;box-shadow:0 3px 8px rgba(181,83,47,.35);z-index:6;animation:hintbob 1.3s ease-in-out infinite}
+.m-hint::before{content:"☝";font-size:12px;line-height:1}
+.m-hint.gone{opacity:0;transform:translateX(-50%) translateY(5px);pointer-events:none;transition:.35s;animation:none}
+.mascot-wrap::after{content:"";position:absolute;inset:6px;border-radius:50%;border:2.5px solid var(--accent);opacity:0;pointer-events:none;animation:mpulse 2.1s ease-out infinite}
+.mascot-wrap.engaged::after{display:none}
+@keyframes hintbob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(3px)}}
+@keyframes mpulse{0%{transform:scale(.65);opacity:.45}70%{opacity:0}100%{transform:scale(1.3);opacity:0}}
+.mascot-wrap:hover .m-svg{filter:drop-shadow(0 3px 6px rgba(181,83,47,.25))}
+@keyframes shine{to{background-position:220% 0}}
+@media (prefers-reduced-motion:reduce){.m-svg,.m-eyes,.m-hint{animation:none}.mascot-wrap::after{display:none}}
+@media print{
+ *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ body{background:#fff} .wrap{padding:0 6px}
+ .controls,.actions,.gridctl,.note,.divider{display:none!important}
+ .masthead{padding-bottom:8px;border-bottom-width:2px}
+ h1{font-size:30px;margin:.04em 0}
+ .lead{font-size:12px;margin:.12em 0 0}
+ .rule{margin:8px 0 0;padding:8px 11px}
+ .lvl-head{padding-top:8px} .lvl-meta p{font-size:12.5px}
+ .level{margin-top:14px;break-inside:auto;page-break-inside:auto}
+ .figbox,.grid,.keyblock{break-inside:avoid;page-break-inside:avoid}
+ .tlist li{break-inside:avoid}
+ .cell{border-right-color:#9a907a;border-bottom-color:#9a907a}
+ .answerkey{break-before:page}
+ body.ponly-easy .level:not(.lvl-easy),body.ponly-easy .keyblock:not(.key-easy){display:none!important}
+ body.ponly-medium .level:not(.lvl-medium),body.ponly-medium .keyblock:not(.key-medium){display:none!important}
+ body.ponly-hard .level:not(.lvl-hard),body.ponly-hard .keyblock:not(.key-hard){display:none!important}
+ .credit{margin:14px 0 0} .credit .badge{background:#fff}
+ .mascot-wrap{display:none!important}
+}
+</style></head><body><div class="wrap">
+<header class="masthead">
+  <div class="mast-row">
+    <div class="mast-main">
+      <div class="kicker">Математика · 9. клас · Тригонометрия на остър ъгъл</div>
+      <h1>Тригонометрично судоку</h1>
+      <p class="lead">В клетките стоят етикети Т1–Т9. Реши тригонометричните задачи и приложи ранг-правилото, за да получиш цифрите. Отговорите не са 1–9 и съответствието не е изписано никъде — налучкване не помага.</p>
+    </div>
+    <div class="mascot-wrap" id="mascot" role="button" tabindex="0" aria-label="Талисман — натисни ме">
+      <div class="m-bubble" id="mBubble"></div>
+      <span class="m-hint" id="mHint">Имам какво да кажа!</span>
+      <svg class="m-svg" viewBox="0 0 100 100" aria-hidden="true">
+        <polygon points="26,28 26,80 80,80" fill="var(--figfill)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M26,70 L36,70 L36,80" fill="none" stroke="var(--ink)" stroke-width="2"/>
+        <path d="M67,80 A13,13 0 0 1 71.8,71.2" fill="none" stroke="var(--accent)" stroke-width="2"/>
+        <g class="m-eyes"><ellipse cx="38" cy="56" rx="3.3" ry="4.2" fill="var(--ink)"/><ellipse cx="49" cy="58" rx="3.3" ry="4.2" fill="var(--ink)"/></g>
+        <path d="M36,64 Q43.5,70 51,64" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+  <div class="rule">
+    <h4>Ранг-правило (как етикетите стават цифри)</h4>
+    <p>Реши деветте задачи Т1–Т9 и подреди отговорите по големина. <b>Най-малкият отговор е цифрата 1</b>, следващият е 2, и така нататък — <b>най-големият е 9</b>. Така всеки етикет получава своята цифра.</p>
+    <div class="scale"><b>1</b> най-малък отговор &nbsp;→&nbsp; <b>2</b> &nbsp;→&nbsp; <b>3</b> &nbsp;→ … →&nbsp; <b>9</b> най-голям отговор</div>
+  </div>
+  <div class="controls">
+    <div class="cgroup"><span class="lbl">Етикети</span><div class="seg" id="segScope">
+      <button data-v="givens" class="active">Само дадените</button><button data-v="all">Всички полета</button></div></div>
+    <div class="cgroup"><span class="lbl">Режим</span><div class="seg" id="segMode">
+      <button data-v="interactive" class="active">Интерактивно</button><button data-v="print">За печат</button></div></div>
+    <div class="cgroup"><span class="lbl">Печат на</span><div class="seg" id="segPrint">
+      <button data-v="all" class="active">Всички</button><button data-v="easy">Ниво 1</button><button data-v="medium">Ниво 2</button><button data-v="hard">Ниво 3</button></div></div>
+    <div class="actions">
+      <button class="act" id="printBtn">🖨 Печат</button>
+      <button class="act" id="regen">↻ Нова задача</button>
+      <button class="act ghost" id="toggle">Покажи отговорите</button>
+    </div>
+  </div>
+  <p class="note" id="modeNote"></p>
+  <div class="credit"><span class="badge"><span class="star">✦</span>Идея: <b>Валя Витковска</b> · Реализация: <b>Claude</b><span class="star">✦</span></span></div>
+</header>
+<div id="levels"></div>
+<div class="divider">✦ ✦ ✦</div>
+<section class="answerkey" id="answerkey" hidden>
+  <h2>Ключ (за проверка)</h2>
+  <p class="lead" style="font-style:normal;font-size:13.5px">Подредени отговори (стойност → ранг = цифра) и напълно решените судокута.</p>
+  <div class="keys" id="keys"></div>
+</section>
+<footer>Учебен лист · ранг-правило: най-малкият от деветте отговора = 1 … най-големият = 9 · отговорите не са 1–9 · всяко судоку има единствено решение.</footer>
+</div>
+<script>
+const FIG={easy:`<svg viewBox="0 0 260 190"><polygon points="50,50 50,150 210,150" fill="var(--figfill)" stroke="var(--ink)" stroke-width="2.2" stroke-linejoin="round"/><path d="M50,134 L66,134 L66,150" fill="none" stroke="var(--ink)" stroke-width="1.5"/><path d="M186,150 A24,24 0 0 1 189.65,137.28" fill="none" stroke="var(--accent)" stroke-width="1.9"/><text x="166" y="143" class="fa">α</text><text x="37" y="104" class="fl">a</text><text x="126" y="169" class="fl">b</text><text x="140" y="92" class="fl">c</text><text x="40" y="44" class="fv">A</text><text x="216" y="156" class="fv">B</text><text x="36" y="167" class="fv">C</text></svg>`, medium:`<svg viewBox="0 0 260 190"><polygon points="130,40 40,155 220,155" fill="var(--figfill)" stroke="var(--ink)" stroke-width="2.2" stroke-linejoin="round"/><line x1="130" y1="40" x2="130" y2="155" stroke="var(--accent)" stroke-width="1.8" stroke-dasharray="5 3"/><path d="M130,141 L144,141 L144,155" fill="none" stroke="var(--ink)" stroke-width="1.4"/><text x="64" y="93" class="fl">b</text><text x="186" y="93" class="fl">b</text><text x="95" y="176" class="fl">a</text><text x="136" y="104" class="fl">h</text><text x="124" y="34" class="fv">C</text><text x="26" y="162" class="fv">A</text><text x="224" y="162" class="fv">B</text><text x="133" y="173" class="fv">M</text></svg>`, hard:`<svg viewBox="0 0 270 190"><polygon points="45,95 155,95 215,155 45,155" fill="var(--figfill)" stroke="var(--ink)" stroke-width="2.2" stroke-linejoin="round"/><line x1="45" y1="95" x2="45" y2="155" stroke="var(--accent)" stroke-width="1.9"/><path d="M45,141 L59,141 L59,155" fill="none" stroke="var(--ink)" stroke-width="1.4"/><path d="M45,109 L59,109 L59,95" fill="none" stroke="var(--ink)" stroke-width="1.4"/><path d="M193,155 A22,22 0 0 1 199.44,139.44" fill="none" stroke="var(--accent)" stroke-width="1.9"/><text x="170" y="150" class="fa">45°</text><text x="126" y="174" class="fl">a</text><text x="96" y="89" class="fl">b</text><text x="32" y="129" class="fl">h</text><text x="36" y="91" class="fv">D</text><text x="158" y="90" class="fv">C</text><text x="34" y="167" class="fv">A</text><text x="220" y="161" class="fv">B</text></svg>`};
+// ---------- trig/geometry task bank (answers are integers >=10, i.e. NOT 1..9) ----------
+const D2R=d=>d*Math.PI/180, S=d=>Math.sin(D2R(d)), C=d=>Math.cos(D2R(d)), T=d=>Math.tan(D2R(d));
+const intOf=x=>{const r=Math.round(x);return Math.abs(x-r)<1e-9?r:NaN;};
+
+function buildBank(){
+  const tasks=[];
+  const add=(cat,ans,text,ev)=>{ if(Number.isInteger(ans)&&ans>=10) tasks.push({cat,ans,text,ev}); };
+
+  // SPECIAL angles
+  for(let k=10;k<=25;k++) add('special',k,`Пресметнете <b>${k}·tg 45°</b>.`,()=>k*T(45));
+  for(let k=20;k<=50;k+=2){ add('special',k/2,`Пресметнете <b>${k}·sin 30°</b>.`,()=>k*S(30));
+                            add('special',k/2,`Пресметнете <b>${k}·cos 60°</b>.`,()=>k*C(60)); }
+  add('special',14,'Пресметнете <b>20·sin 30° + 4·tg 45°</b>.',()=>20*S(30)+4*T(45));
+  add('special',16,'Пресметнете <b>24·cos 60° + 4·tg 45°</b>.',()=>24*C(60)+4*T(45));
+
+  // IDENTITIES
+  for(let k=10;k<=25;k++){ add('identity',k,`За остър ъгъл α пресметнете <b>${k}·(sin²α + cos²α)</b>.`,()=>k*1);
+                           add('identity',k,`Пресметнете <b>${k}·(2·sin 45°·cos 45°)</b>.`,()=>k*(2*S(45)*C(45))); }
+
+  // RIGHT TRIANGLE — definitions of sin/cos + Pythagoras
+  const triples=[[6,8,10],[9,12,15],[8,15,17],[12,16,20],[15,20,25],[7,24,25],[10,24,26],
+                 [20,21,29],[18,24,30],[16,30,34],[21,28,35],[12,35,37],[15,36,39],[24,32,40],[9,40,41]];
+  for(const [a,b,c] of triples){
+    add('rt',a,`Правоъгълен триъгълник: катетът срещу ъгъл α е ${a}, прилежащият е ${b}, хипотенузата е ${c}. Пресметнете <b>${c}·sinα</b>.`,()=>c*(a/c));
+    add('rt',b,`Правоъгълен триъгълник: катетът срещу ъгъл α е ${a}, прилежащият е ${b}, хипотенузата е ${c}. Пресметнете <b>${c}·cosα</b>.`,()=>c*(b/c));
+    add('rt',a,`Правоъгълен триъгълник с хипотенуза ${c} и катет ${b}. Намерете другия катет.`,()=>Math.sqrt(c*c-b*b));
+    add('rt',b,`Правоъгълен триъгълник с хипотенуза ${c} и катет ${a}. Намерете другия катет.`,()=>Math.sqrt(c*c-a*a));
+    add('rt',c,`Правоъгълен триъгълник с катети ${a} и ${b}. Намерете хипотенузата.`,()=>c);
+  }
+
+  // ISOSCELES TRIANGLE
+  for(let base=20;base<=40;base+=2) add('isos',base/2,`Равнобедрен триъгълник с основа ${base}. Височината към основата я разполовява — намерете полуосновата.`,()=>base/2);
+  const isoH=[[17,16],[25,14],[25,30],[26,20],[20,24],[15,18],[25,40],[37,24],[35,42],[30,36],[34,32],[29,42]];
+  for(const [leg,base] of isoH){const h=Math.sqrt(leg*leg-(base/2)*(base/2)); const hi=intOf(h);
+    if(hi>=10) add('isos',hi,`Равнобедрен триъгълник с бедра ${leg} и основа ${base}. Намерете височината към основата.`,()=>h);}
+
+  // TRAPEZOIDS
+  const rt45=[[22,10],[25,14],[30,18],[24,11],[27,15],[28,16],[33,20],[31,18],[26,12],[40,18],[44,20],[48,25],[42,16]];
+  for(const [a,b] of rt45){const h=a-b; if(h>=10) add('trap',h,`Правоъгълен трапец с основи ${a} и ${b} и ъгъл 45° при наклонената страна. Намерете височината.`,()=>a-b);}
+  const is45=[[34,10],[40,12],[36,8],[44,12],[48,14],[50,12],[46,10],[42,14],[38,10]];
+  for(const [a,b] of is45){const h=(a-b)/2; if(Number.isInteger(h)&&h>=10) add('trap',h,`Равнобедрен трапец с основи ${a} и ${b} и ъгъл 45° при основата. Намерете височината.`,()=>(a-b)/2);}
+  const med=[[23,11],[27,13],[19,11],[25,13],[31,9],[29,11],[33,7],[24,8],[26,12],[28,10],[35,9],[39,7],[37,11],[41,7],[45,5]];
+  for(const [a,b] of med){const m=(a+b)/2; if(Number.isInteger(m)&&m>=10) add('trap',m,`Трапец с основи ${a} и ${b}. Намерете средната основа (медианата).`,()=>(a+b)/2);}
+
+  return tasks;
+}
+
+const CATS={easy:['special','rt'], medium:['special','identity','isos','rt'], hard:['special','identity','trap']};
+
+// pick 9 tasks with DISTINCT answer-values from allowed categories
+function pickTasks(bank, level, rnd){
+  const allowed=new Set(CATS[level]);
+  const byVal={};
+  for(const t of bank) if(allowed.has(t.cat)){ (byVal[t.ans]=byVal[t.ans]||[]).push(t); }
+  let vals=Object.keys(byVal).map(Number);
+  // shuffle values, take 9 distinct
+  for(let i=vals.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[vals[i],vals[j]]=[vals[j],vals[i]];}
+  const chosenVals=vals.slice(0,9);
+  const chosen=chosenVals.map(v=>{const arr=byVal[v];return arr[Math.floor(rnd()*arr.length)];});
+  // shuffle task display order
+  for(let i=chosen.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[chosen[i],chosen[j]]=[chosen[j],chosen[i]];}
+  return chosen; // 9 tasks, 9 distinct answer-values (all >=10)
+}
+
+// ---------- sudoku ----------
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function fullSolution(rnd){
+  const g=new Array(81).fill(0);const rows=new Array(9).fill(0),cols=new Array(9).fill(0),box=new Array(9).fill(0);
+  function bt(p){ if(p===81)return true; const r=p/9|0,c=p%9,b=(r/3|0)*3+(c/3|0);const used=rows[r]|cols[c]|box[b];
+    const cand=[];for(let v=1;v<=9;v++) if(!(used&(1<<v))) cand.push(v);
+    for(let i=cand.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[cand[i],cand[j]]=[cand[j],cand[i]];}
+    for(const v of cand){g[p]=v;rows[r]|=1<<v;cols[c]|=1<<v;box[b]|=1<<v; if(bt(p+1))return true; g[p]=0;rows[r]&=~(1<<v);cols[c]&=~(1<<v);box[b]&=~(1<<v);}
+    return false; } bt(0);return g;
+}
+function countSolutions(g,limit){
+  const rows=new Array(9).fill(0),cols=new Array(9).fill(0),box=new Array(9).fill(0);
+  for(let p=0;p<81;p++){const v=g[p];if(v){const r=p/9|0,c=p%9,b=(r/3|0)*3+(c/3|0);rows[r]|=1<<v;cols[c]|=1<<v;box[b]|=1<<v;}}
+  let cnt=0;
+  function bt(){ if(cnt>=limit)return; let p=-1;for(let i=0;i<81;i++)if(!g[i]){p=i;break;} if(p<0){cnt++;return;}
+    const r=p/9|0,c=p%9,b=(r/3|0)*3+(c/3|0),used=rows[r]|cols[c]|box[b];
+    for(let v=1;v<=9;v++) if(!(used&(1<<v))){g[p]=v;rows[r]|=1<<v;cols[c]|=1<<v;box[b]|=1<<v;bt();g[p]=0;rows[r]&=~(1<<v);cols[c]&=~(1<<v);box[b]&=~(1<<v);if(cnt>=limit)return;} }
+  bt();return cnt;
+}
+function makePuzzle(rnd,targetClues){
+  const sol=fullSolution(rnd);const puz=sol.slice();const order=[...Array(81).keys()];
+  for(let i=order.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+  let clues=81;
+  for(const p of order){ if(clues<=targetClues) break; const saved=puz[p]; puz[p]=0;
+    if(countSolutions(puz.slice(),2)!==1){puz[p]=saved;} else clues--; }
+  return {sol,puz,clues};
+}
+
+
+
+
+const LEVELS=[
+ {key:'easy',no:'НИВО 1',diff:'Лесно',fig:'Правоъгълен триъгълник',clues:36,
+  desc:'Дефиниции на sin, cos, tg в правоъгълен триъгълник, специални ъгли и решаване на правоъгълен триъгълник.', svg:FIG.easy},
+ {key:'medium',no:'НИВО 2',diff:'Средно',fig:'Равнобедрен триъгълник',clues:30,
+  desc:'Височината разделя равнобедрения триъгълник на два правоъгълни — дефиниции, Питагорова теорема и тъждеството sin²α+cos²α=1.', svg:FIG.medium},
+ {key:'hard',no:'НИВО 3',diff:'Трудно',fig:'Прав и равнобедрен трапец',clues:26,
+  desc:'Височина и средна основа на трапец, дефиниции на функциите и тригонометрични тъждества.', svg:FIG.hard},
+];
+
+function shuffle(a,rnd){for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function makePuzzleAllDigits(rnd,tc){for(let k=0;k<30;k++){const r=makePuzzle(rnd,tc);const s=new Set();for(const v of r.puz)if(v)s.add(v);if(s.size===9)return r;}return makePuzzle(rnd,tc);}
+
+let STATE=null;
+let scope='givens', mode='interactive';
+
+function generate(){
+  const bank=buildBank();
+  const seed=(Date.now()^(Math.random()*1e9))>>>0; const rnd=mulberry32(seed);
+  const levels=[];
+  for(const L of LEVELS){
+    const {sol,puz}=makePuzzleAllDigits(rnd,L.clues);
+    const tasks=pickTasks(bank,L.key,rnd);
+    const ord=tasks.map((t,i)=>({i,a:t.ans})).sort((x,y)=>x.a-y.a);  // ascending
+    const digitOfTask={}, tagOfDigit={}, valOfDigit={};
+    ord.forEach((o,r)=>{digitOfTask[o.i]=r+1;});
+    for(let d=1;d<=9;d++){const ti=ord[d-1].i; tagOfDigit[d]='Т'+(ti+1); valOfDigit[d]=tasks[ti].ans;}
+    levels.push({L,sol,puz,tasks,digitOfTask,tagOfDigit,valOfDigit});
+  }
+  STATE={levels};
+}
+
+function renderView(){
+  const levelsEl=document.getElementById('levels'); levelsEl.innerHTML='';
+  const keysEl=document.getElementById('keys'); keysEl.innerHTML='';
+  document.getElementById('modeNote').textContent =
+    (scope==='all'?'Етикети на всички полета: цялата решетка може да се попълни само чрез задачите (без логика). ':'Етикети само на дадените: реши задачите за началните цифри, после довърши судокуто по логиката. ')
+    + (mode==='print'?'Изглед за печат — без полета за въвеждане; реши на ръка по ранг-правилото.':'Интерактивно — въведи отговор и цифрата се появява сама.');
+
+  for(const lv of STATE.levels){
+    const {L,sol,puz,tasks,digitOfTask,tagOfDigit}=lv;
+    const sec=document.createElement('section'); sec.className='level lvl-'+L.key;
+    sec.innerHTML=`<div class="lvl-head"><div class="lvl-no">${L.no}</div>
+      <div class="lvl-meta"><h2>${L.diff} · ${L.fig}</h2><p>${L.desc}</p></div></div>
+      <div class="lvl-body"><div class="left">
+        <figure class="figbox"><figcaption>Фигура за нивото · ${L.fig}</figcaption>${L.svg}</figure>
+        <div class="grid"></div>
+        <div class="gridctl"></div>
+      </div>
+      <div class="tasks"><h3>Тригонометрични задачи</h3><div class="prog">Решени задачи: <b class="pc">0</b>/9</div><ol class="tlist"></ol></div></div>`;
+    const gridEl=sec.querySelector('.grid'); const cellByDigit={};
+    for(let p=0;p<81;p++){
+      const r=p/9|0,c=p%9; const cell=document.createElement('div'); let cls='cell';
+      if(c%3===2&&c!==8)cls+=' rb'; if(r%3===2&&r!==8)cls+=' bb';
+      const isGiven=puz[p]!==0;
+      const showTag=(scope==='all')||isGiven;
+      if(mode==='print'){
+        if(showTag){ cls+=' tag'+(isGiven?' isgiven':''); cell.className=cls; cell.textContent=tagOfDigit[sol[p]]; }
+        else { cell.className=cls; }
+      } else { // interactive
+        if(showTag){ cls+=' locked'; cell.className=cls; cell.textContent=tagOfDigit[sol[p]];
+          const d=sol[p]; (cellByDigit[d]=cellByDigit[d]||[]).push(cell); }
+        else { cell.className=cls; const inp=document.createElement('input'); inp.setAttribute('inputmode','numeric'); inp.maxLength=1;
+          inp.addEventListener('input',()=>{inp.value=inp.value.replace(/[^1-9]/g,'').slice(0,1);cell.classList.remove('bad','good');});
+          cell.appendChild(inp); }
+      }
+      gridEl.appendChild(cell);
+    }
+    // tasks
+    const tl=sec.querySelector('.tlist'); let solved=0; const solvedSet=new Set();
+    tasks.forEach((t,i)=>{
+      const li=document.createElement('li');
+      li.innerHTML=`<span class="ttag">Т${i+1}</span><span class="ttxt">${t.text}</span>`;
+      if(mode==='interactive'){
+        const tin=document.createElement('input'); tin.className='tin'; tin.setAttribute('inputmode','numeric'); tin.placeholder='?';
+        li.appendChild(tin);
+        tin.addEventListener('input',()=>{ tin.classList.remove('tbad'); const val=parseInt(tin.value,10);
+          if(val===t.ans && !solvedSet.has(i)){ solvedSet.add(i); li.classList.add('tsolved'); tin.readOnly=true;
+            const d=digitOfTask[i]; (cellByDigit[d]||[]).forEach(cell=>{cell.classList.remove('locked');cell.classList.add('given');cell.textContent=d;});
+            solved++; sec.querySelector('.pc').textContent=solved;
+          } else if(tin.value.length>=2 && val!==t.ans){ tin.classList.add('tbad'); } });
+      } else {
+        const box=document.createElement('span'); box.className='tin'; box.style.display='inline-block'; li.appendChild(box);
+      }
+      tl.appendChild(li);
+    });
+    if(mode==='interactive'){ sec.querySelector('.prog').style.display=''; } else { sec.querySelector('.prog').style.display='none'; }
+    // grid controls (interactive + givens scope only -> sudoku check)
+    const gc=sec.querySelector('.gridctl');
+    if(mode==='interactive' && scope==='givens'){
+      gc.innerHTML='<button class="small check">Провери</button><button class="small clear">Нулирай</button><span class="gridmsg"></span>';
+      gc.querySelector('.check').addEventListener('click',()=>{
+        let filled=0,wrong=0,total=0; const cells=gridEl.querySelectorAll('.cell');
+        cells.forEach((cell,p)=>{const inp=cell.querySelector('input'); if(!inp)return; total++; cell.classList.remove('good','bad');
+          if(inp.value!==''){filled++; if(parseInt(inp.value,10)===sol[p])cell.classList.add('good'); else{cell.classList.add('bad');wrong++;}}});
+        const msg=gc.querySelector('.gridmsg');
+        if(solved<9){msg.className='gridmsg err';msg.textContent='Първо реши всички задачи, за да се появят дадените цифри.';return;}
+        if(filled<total){msg.className='gridmsg err';msg.textContent='Попълни всички клетки (остават '+(total-filled)+').';}
+        else if(wrong===0){msg.className='gridmsg ok';msg.textContent='Браво! Решено вярно. ✓';}
+        else{msg.className='gridmsg err';msg.textContent='Има '+wrong+' грешни клетки.';}
+      });
+      gc.querySelector('.clear').addEventListener('click',()=>{gridEl.querySelectorAll('input').forEach(i=>i.value='');gridEl.querySelectorAll('.cell').forEach(c=>c.classList.remove('good','bad'));gc.querySelector('.gridmsg').textContent='';});
+    } else if(mode==='print'){
+      gc.innerHTML='<span class="note">За печат: Файл → Печат. Реши на хартия по ранг-правилото.</span>';
+    }
+    levelsEl.appendChild(sec);
+
+    // answer key
+    const ord=tasks.map((t,i)=>({i,a:t.ans})).sort((x,y)=>x.a-y.a);
+    const ranked=ord.map((o,r)=>`${o.a}→${r+1}`).join(' · ');
+    let kg='<div class="grid">'; for(let p=0;p<81;p++){const r=p/9|0,c=p%9;let cls='cell sol'+(puz[p]!==0?' given':'');if(c%3===2&&c!==8)cls+=' rb';if(r%3===2&&r!==8)cls+=' bb';kg+=`<div class="${cls}">${sol[p]}</div>`;} kg+='</div>';
+    const taskans=tasks.map((t,i)=>`Т${i+1}=${t.ans}`).join(' · ');
+    const kb=document.createElement('div'); kb.className='keyblock key-'+L.key;
+    kb.innerHTML=`<h3>${L.no} · ${L.diff}</h3><p class="ansrow"><b>Отговори:</b> ${taskans}<br><b>Подредени (стойност→цифра):</b> ${ranked}</p>${kg}`;
+    keysEl.appendChild(kb);
+  }
+  const ak=document.getElementById('answerkey'); ak.hidden=true; document.getElementById('toggle').textContent='Покажи отговорите';
+}
+
+function setSeg(id,val,cb){ const seg=document.getElementById(id);
+  seg.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.v===val)); cb(val); }
+document.getElementById('segScope').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; setSeg('segScope',b.dataset.v,v=>{scope=v;}); renderView();});
+document.getElementById('segMode').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; setSeg('segMode',b.dataset.v,v=>{mode=v;}); renderView();});
+document.getElementById('regen').addEventListener('click',()=>{generate();renderView();});
+let printScope='all';
+document.getElementById('segPrint').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return;
+  setSeg('segPrint',b.dataset.v,v=>{printScope=v; document.body.classList.remove('ponly-easy','ponly-medium','ponly-hard'); if(v!=='all')document.body.classList.add('ponly-'+v);});});
+document.getElementById('printBtn').addEventListener('click',()=>{
+  if(mode!=='print'){ setSeg('segMode','print',v=>{mode=v;}); renderView(); }
+  setTimeout(()=>window.print(), 60);
+});
+document.getElementById('toggle').addEventListener('click',()=>{const ak=document.getElementById('answerkey');ak.hidden=!ak.hidden;document.getElementById('toggle').textContent=ak.hidden?'Покажи отговорите':'Скрий отговорите';if(!ak.hidden)ak.scrollIntoView({behavior:'smooth'});});
+
+(function(){
+  const m=document.getElementById('mascot'); if(!m) return;
+  const bubble=document.getElementById('mBubble'); const svg=m.querySelector('.m-svg'); const hint=document.getElementById('mHint');
+  const phrases=['tg 45° = 1 — лесна работа!','Остър ъгъл, остър ум!','Питагор би се гордял с теб.','sin²α + cos²α = 1, винаги!','Хипотенузо, насам!','Дай още едно судоку!','90° чиста истина.','Ред по ред, ъгъл по ъгъл!','Подреди отговорите — и готово!','Триъгълник на твоя страна.','cos 60° = ½ — детска игра!','Специалните ъгли са твои приятели.','Без паника — стъпка по стъпка.','Реши ме, ако смееш!','Математиката е спорт за ума.','Браво, продължавай така!','Кое ли е най-малкото число?','Острите ъгли са под 90°, нали?','Ти можеш повече, отколкото мислиш.','Синус, косинус, тангенс — екип!','Един ъгъл по-малко до целта!','Малко тригонометрия дневно!','Дишай и смятай.','Височината знае пътя.','Намери h и победи трапеца!'];
+  let last=-1, t, engaged=false;
+  function play(){
+    if(!engaged){ engaged=true; m.classList.add('engaged'); if(hint) hint.classList.add('gone'); }
+    if(svg.animate) svg.animate([{transform:'rotate(0)'},{transform:'rotate(360deg)'}],{duration:820,easing:'cubic-bezier(.34,1.5,.5,1)'});
+    let i; do{i=Math.floor(Math.random()*phrases.length);}while(i===last&&phrases.length>1); last=i;
+    bubble.innerHTML=''; [...phrases[i]].forEach((ch,idx)=>{ const sp=document.createElement('span'); sp.className='ch'; sp.textContent=(ch===' '?'\u00A0':ch); sp.style.animationDelay=(idx*26)+'ms'; bubble.appendChild(sp); });
+    bubble.classList.remove('show'); void bubble.offsetWidth; bubble.classList.add('show'); clearTimeout(t); t=setTimeout(()=>bubble.classList.remove('show'),2600);
+    for(let k=0;k<8;k++){ const s=document.createElement('span'); s.className='spark'; s.textContent='✦'; m.appendChild(s);
+      const a=Math.random()*Math.PI*2, d=24+Math.random()*24, dx=Math.cos(a)*d, dy=Math.sin(a)*d;
+      if(s.animate){ s.animate([{transform:'translate(-50%,-50%) scale(0)',opacity:1},{transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(1)`,opacity:1,offset:.7},{transform:`translate(calc(-50% + ${dx*1.3}px),calc(-50% + ${dy*1.3}px)) scale(.2)`,opacity:0}],{duration:720,easing:'ease-out'}).onfinish=()=>s.remove(); }
+      else setTimeout(()=>s.remove(),720);
+    }
+  }
+  m.addEventListener('click',play);
+  m.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); play(); } });
+})();
+generate(); renderView();
+</script>
+</body></html>
