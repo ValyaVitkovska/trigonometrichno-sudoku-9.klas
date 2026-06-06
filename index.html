@@ -153,6 +153,10 @@ body.pt .rule{display:none}
 .frac>span{padding:0 .35em;line-height:1.22}
 .frac .fnum{border-bottom:1.6px solid currentColor}
 
+.topbar{position:sticky;top:0;z-index:40;background:rgba(255,251,242,.96);border-bottom:1px solid var(--line);margin:0 0 6px;padding:7px 2px;font-family:'Fraunces';font-weight:600;font-size:12.5px;color:var(--accent);letter-spacing:.02em;text-align:center}
+.topbar span:empty{display:none}
+@media print{.topbar{display:none}}
+.who{font-family:'Fraunces';font-weight:600;font-size:13px;color:var(--accent);margin:3px 0 2px;min-height:16px}
 .nameinp{height:30px;border:1.5px solid var(--ink);border-radius:8px;padding:0 8px;font-size:13px;min-width:150px;font-family:inherit}
 .rcard{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(540px,92vw);max-height:86vh;overflow:auto;background:#fffdf7;border:2px solid var(--ink);border-radius:16px;box-shadow:0 20px 60px rgba(31,42,68,.3);padding:18px 18px 14px;z-index:60}
 .rcard[hidden]{display:none}
@@ -165,6 +169,7 @@ body.pt .rule{display:none}
 .rc-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 @media print{ body.rcard-print *{visibility:hidden!important} body.rcard-print #resultCard,body.rcard-print #resultCard *{visibility:visible!important} body.rcard-print #resultCard{position:absolute;left:0;top:0;transform:none;box-shadow:none;border:1px solid #000;width:auto;max-height:none} body.rcard-print .rc-actions{display:none!important} }
 </style></head><body><div class="wrap">
+<div class="topbar" id="topbar"><span data-who></span></div>
 <header class="masthead">
   <div class="mast-row">
     <div class="mast-main">
@@ -469,7 +474,7 @@ function renderView(){
     const taskInteractive=(mode==='interactive' && emptyMode==='task');
     const sec=document.createElement('section'); sec.className='level lvl-'+L.key;
     sec.innerHTML=`<div class="lvl-head"><div class="lvl-no">${L.no}</div>
-      <div class="lvl-meta"><h2>${L.diff} · ${L.fig}</h2><p>${L.desc}</p></div></div>
+      <div class="lvl-meta"><h2>${L.diff} · ${L.fig}</h2><div class="who" data-who></div><p>${L.desc}</p></div></div>
       <div class="lvl-body"><div class="left">
         <figure class="figbox"><figcaption>Фигура за нивото · ${L.fig}</figcaption>${L.svg}</figure>
         <div class="grid"></div>
@@ -546,7 +551,7 @@ function renderView(){
         const msg=gc.querySelector('.gridmsg');
         if(solved<9){msg.className='gridmsg err';msg.textContent='Първо реши всички задачи, за да се появят дадените цифри.';return;}
         if(filled<total){msg.className='gridmsg err';msg.textContent='Попълни всички клетки (остават '+(total-filled)+').';}
-        else if(wrong===0){msg.className='gridmsg ok';msg.textContent='Браво! Решено вярно. ✓';}
+        else if(wrong===0){msg.className='gridmsg ok';const _nm=((document.getElementById('studentName')||{}).value||'').trim();msg.textContent='Браво'+(_nm?(', '+_nm):'')+'! Решено вярно. ✓';}
         else{msg.className='gridmsg err';msg.textContent='Има '+wrong+' грешни клетки.';}
       });
       gc.querySelector('.clear').addEventListener('click',()=>{gridEl.querySelectorAll('input').forEach(i=>i.value='');gridEl.querySelectorAll('.cell').forEach(c=>c.classList.remove('good','bad'));gc.querySelector('.gridmsg').textContent='';});
@@ -575,7 +580,11 @@ function renderView(){
     keysEl.appendChild(kb);
   }
   const ak=document.getElementById('answerkey'); ak.hidden=true; document.getElementById('toggle').textContent='Покажи отговорите';
+  refreshWho();
 }
+function refreshWho(){ const nm=((document.getElementById('studentName')||{}).value||'').trim();
+  const txt=(nm?('Ученик: '+nm+' · '):'')+'Вариант '+((STATE&&STATE.code)||'')+((STATE&&STATE.date)?(' · '+STATE.date):'');
+  document.querySelectorAll('[data-who]').forEach(el=>{el.textContent=txt;}); }
 
 function setSeg(id,val,cb){ const seg=document.getElementById(id);
   seg.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.v===val)); cb(val); }
@@ -625,6 +634,7 @@ function showLog(){
 }
 function dlText(text,fname){ try{ const b=new Blob([text],{type:'text/plain;charset=utf-8'}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1500);}catch(e){} }
 (function(){
+  const sn=document.getElementById('studentName'); if(sn) sn.addEventListener('input',refreshWho);
   const rb=document.getElementById('resultBtn'); if(rb) rb.addEventListener('click',showResult);
   const lb=document.getElementById('logBtn'); if(lb) lb.addEventListener('click',showLog);
   const hide=()=>{ const c=document.getElementById('resultCard'); if(c) c.hidden=true; };
