@@ -88,6 +88,21 @@ footer{margin-top:38px;border-top:1px solid var(--line);padding-top:12px;font-si
 @keyframes chpop{60%{opacity:1;transform:translateY(-3px) scale(1.14)}100%{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes bubblepop{0%{transform:translate(-50%,8px) scale(.6)}55%{transform:translate(-50%,-2px) scale(1.06)}100%{transform:translate(-50%,0) scale(1)}}
 .spark{position:absolute;left:50%;top:42%;color:#caa24a;font-size:13px;pointer-events:none;will-change:transform,opacity}
+.cell.qcell{cursor:pointer;color:var(--accent2);font-weight:600;font-size:17px;background:#fff}
+.cell.qcell:hover{background:#fff3df;color:var(--accent)}
+.cell.qcell[data-done]{cursor:default}
+.cellpop{position:fixed;z-index:50;width:280px;max-width:92vw;background:#fffdf7;border:2px solid var(--ink);border-radius:14px;box-shadow:0 14px 40px rgba(31,42,68,.28);padding:14px 14px 12px}
+.cellpop[hidden]{display:none}
+.cellpop .cp-lab{font-family:"Fraunces";font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.cellpop .cp-task{font-size:14px;margin:6px 0 11px;line-height:1.45} .cellpop .cp-task b{color:var(--ink)}
+.cellpop .cp-row{display:flex;gap:8px}
+.cellpop .cp-in{flex:1;height:38px;border:1.5px solid var(--ink);border-radius:9px;text-align:center;font-family:"Fraunces";font-size:17px;outline:none}
+.cellpop .cp-in:focus{border-color:var(--accent)}
+.cellpop .cp-ok{font-family:"Fraunces";font-weight:600;border:2px solid var(--ink);background:var(--ink);color:#fff;border-radius:9px;padding:0 14px;cursor:pointer}
+.cellpop .cp-ok:hover{background:var(--accent);border-color:var(--accent)}
+.cellpop .cp-msg{min-height:16px;font-size:12.5px;font-family:"Fraunces";margin-top:7px}
+.cellpop .cp-msg.err{color:var(--err)} .cellpop .cp-msg.ok{color:var(--ok)}
+.cellpop .cp-x{position:absolute;top:6px;right:9px;border:0;background:transparent;font-size:20px;line-height:1;color:var(--ink2);cursor:pointer}
 .m-hint{position:absolute;top:100%;left:50%;margin-top:6px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:4px;background:var(--accent);color:#fff;font-family:"Fraunces";font-weight:600;font-size:10.5px;padding:3px 9px;border-radius:999px;white-space:nowrap;box-shadow:0 3px 8px rgba(181,83,47,.35);z-index:6;animation:hintbob 1.3s ease-in-out infinite}
 .m-hint::before{content:"☝";font-size:12px;line-height:1}
 .m-hint.gone{opacity:0;transform:translateX(-50%) translateY(5px);pointer-events:none;transition:.35s;animation:none}
@@ -118,6 +133,13 @@ footer{margin-top:38px;border-top:1px solid var(--line);padding-top:12px;font-si
  .credit{margin:14px 0 0} .credit .badge{background:#fff}
  .mascot-wrap{display:none!important}
 }
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .18em;line-height:1.05}
+.frac .fnum{border-bottom:1.6px solid currentColor;padding:0 .3em}
+.frac .fden{padding:1px .3em 0}
+body.pt .rule{display:none}
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .14em}
+.frac>span{padding:0 .35em;line-height:1.22}
+.frac .fnum{border-bottom:1.6px solid currentColor}
 </style></head><body><div class="wrap">
 <header class="masthead">
   <div class="mast-row">
@@ -144,8 +166,8 @@ footer{margin-top:38px;border-top:1px solid var(--line);padding-top:12px;font-si
     <div class="scale"><b>1</b> най-малък отговор &nbsp;→&nbsp; <b>2</b> &nbsp;→&nbsp; <b>3</b> &nbsp;→ … →&nbsp; <b>9</b> най-голям отговор</div>
   </div>
   <div class="controls">
-    <div class="cgroup"><span class="lbl">Етикети</span><div class="seg" id="segScope">
-      <button data-v="givens" class="active">Само дадените</button><button data-v="all">Всички полета</button></div></div>
+    <div class="cgroup"><span class="lbl">Празни полета</span><div class="seg" id="segEmpty">
+      <button data-v="logic" class="active">Реши с логика</button><button data-v="task">Реши със задача</button></div></div>
     <div class="cgroup"><span class="lbl">Режим</span><div class="seg" id="segMode">
       <button data-v="interactive" class="active">Интерактивно</button><button data-v="print">За печат</button></div></div>
     <div class="cgroup"><span class="lbl">Печат на</span><div class="seg" id="segPrint">
@@ -160,6 +182,13 @@ footer{margin-top:38px;border-top:1px solid var(--line);padding-top:12px;font-si
   <div class="credit"><span class="badge"><span class="star">✦</span>Идея: <b>Валя Витковска</b> · Реализация: <b>Claude</b><span class="star">✦</span></span></div>
 </header>
 <div id="levels"></div>
+<div class="cellpop" id="cellPopup" hidden>
+  <button class="cp-x" id="cpClose" aria-label="Затвори">×</button>
+  <div class="cp-lab">Реши задачата за това поле</div>
+  <div class="cp-task" id="cpTask"></div>
+  <div class="cp-row"><input id="cpInput" class="cp-in" inputmode="numeric" placeholder="отговор"><button id="cpOk" class="cp-ok">Постави</button></div>
+  <div class="cp-msg" id="cpMsg"></div>
+</div>
 <div class="divider">✦ ✦ ✦</div>
 <section class="answerkey" id="answerkey" hidden>
   <h2>Ключ (за проверка)</h2>
@@ -173,65 +202,136 @@ const FIG={easy:`<svg viewBox="0 0 260 190"><polygon points="50,50 50,150 210,15
 // ---------- trig/geometry task bank (answers are integers >=10, i.e. NOT 1..9) ----------
 const D2R=d=>d*Math.PI/180, S=d=>Math.sin(D2R(d)), C=d=>Math.cos(D2R(d)), T=d=>Math.tan(D2R(d));
 const intOf=x=>{const r=Math.round(x);return Math.abs(x-r)<1e-9?r:NaN;};
+const gcd=(a,b)=>b?gcd(b,Math.abs(a%b)):Math.abs(a);
+const fbar=(n,d)=>`<span class="frac"><span class="fnum">${n}</span><span class="fden">${d}</span></span>`;
+const frac=(n,d)=>{const g=gcd(n,d)||1;n=n/g;d=d/g;return d===1?(''+n):fbar(n,d);};
+const isInt=x=>Math.abs(x-Math.round(x))<1e-9;
 
 function buildBank(){
-  const tasks=[];
-  const add=(cat,ans,text,ev)=>{ if(Number.isInteger(ans)&&ans>=10) tasks.push({cat,ans,text,ev}); };
+  const tasks=[]; const add=(cat,ans,text,ev,kind)=>{ if(isInt(ans)&&ans>=1) tasks.push({cat,ans:Math.round(ans),text,ev,kind}); };
 
-  // SPECIAL angles
-  for(let k=10;k<=25;k++) add('special',k,`Пресметнете <b>${k}·tg 45°</b>.`,()=>k*T(45));
-  for(let k=20;k<=50;k+=2){ add('special',k/2,`Пресметнете <b>${k}·sin 30°</b>.`,()=>k*S(30));
-                            add('special',k/2,`Пресметнете <b>${k}·cos 60°</b>.`,()=>k*C(60)); }
-  add('special',14,'Пресметнете <b>20·sin 30° + 4·tg 45°</b>.',()=>20*S(30)+4*T(45));
-  add('special',16,'Пресметнете <b>24·cos 60° + 4·tg 45°</b>.',()=>24*C(60)+4*T(45));
-
-  // IDENTITIES
-  for(let k=10;k<=25;k++){ add('identity',k,`За остър ъгъл α пресметнете <b>${k}·(sin²α + cos²α)</b>.`,()=>k*1);
-                           add('identity',k,`Пресметнете <b>${k}·(2·sin 45°·cos 45°)</b>.`,()=>k*(2*S(45)*C(45))); }
-
-  // RIGHT TRIANGLE — definitions of sin/cos + Pythagoras
-  const triples=[[6,8,10],[9,12,15],[8,15,17],[12,16,20],[15,20,25],[7,24,25],[10,24,26],
-                 [20,21,29],[18,24,30],[16,30,34],[21,28,35],[12,35,37],[15,36,39],[24,32,40],[9,40,41]];
-  for(const [a,b,c] of triples){
-    add('rt',a,`Правоъгълен триъгълник: катетът срещу ъгъл α е ${a}, прилежащият е ${b}, хипотенузата е ${c}. Пресметнете <b>${c}·sinα</b>.`,()=>c*(a/c));
-    add('rt',b,`Правоъгълен триъгълник: катетът срещу ъгъл α е ${a}, прилежащият е ${b}, хипотенузата е ${c}. Пресметнете <b>${c}·cosα</b>.`,()=>c*(b/c));
-    add('rt',a,`Правоъгълен триъгълник с хипотенуза ${c} и катет ${b}. Намерете другия катет.`,()=>Math.sqrt(c*c-b*b));
-    add('rt',b,`Правоъгълен триъгълник с хипотенуза ${c} и катет ${a}. Намерете другия катет.`,()=>Math.sqrt(c*c-a*a));
-    add('rt',c,`Правоъгълен триъгълник с катети ${a} и ${b}. Намерете хипотенузата.`,()=>c);
+  const TR=[[3,4,5],[6,8,10],[5,12,13],[9,12,15],[8,15,17],[7,24,25],[20,21,29],[12,16,20],
+            [10,24,26],[18,24,30],[16,30,34],[9,40,41],[12,35,37],[15,20,25],[21,28,35],
+            [24,32,40],[15,36,39],[27,36,45],[20,15,25],[40,9,41],[24,10,26],[35,12,37]];
+  for(const [a,b,c] of TR){
+    add('rt',a,`В правоъгълен триъгълник хипотенузата е ${c}, а sin на острия ъгъл е ${frac(a,c)}. Намерете срещулежащия катет.`,()=>c*(a/c),'rt-leg-sin');
+    add('rt',b,`В правоъгълен триъгълник хипотенузата е ${c}, а cos на острия ъгъл е ${frac(b,c)}. Намерете прилежащия катет.`,()=>c*(b/c),'rt-leg-cos');
+    add('rt',a,`Прилежащият на острия ъгъл катет е ${b}, а tg на ъгъла е ${frac(a,b)}. Намерете срещулежащия катет.`,()=>b*(a/b),'rt-leg-tg1');
+    add('rt',b,`Срещулежащият на острия ъгъл катет е ${a}, а tg на ъгъла е ${frac(a,b)}. Намерете прилежащия катет.`,()=>a/(a/b),'rt-leg-tg2');
+    add('rt',c,`Катетът срещу острия ъгъл е ${a}, а sin на ъгъла е ${frac(a,c)}. Намерете хипотенузата.`,()=>a/(a/c),'rt-hyp-sin');
+    add('rt',c,`Прилежащият катет е ${b}, а cos на острия ъгъл е ${frac(b,c)}. Намерете хипотенузата.`,()=>b/(b/c),'rt-hyp-cos');
+    if((a*b)%2===0) add('rt',a*b/2,`Хипотенузата е ${c}, а sin на острия ъгъл е ${frac(a,c)}. Намерете лицето на правоъгълния триъгълник.`,()=>0.5*(c*(a/c))*(c*(b/c)),'rt-area');
+    add('rt',(a+b-c)/2,`Хипотенузата е ${c}, а tg на острия ъгъл е ${frac(a,b)}. Намерете радиуса на вписаната окръжност.`,()=>{const aa=c*(a/c),bb=c*(b/c);return (aa+bb-c)/2;},'rt-inradius');
+  }
+  for(const c of [2,4,6,8,10,12,14,16,18,20,24,30]){
+    add('rt',c/2,`Хипотенузата на правоъгълен триъгълник е ${c}, а единият остър ъгъл е 30°. Намерете срещулежащия му катет.`,()=>c*S(30),'rt-sp30');
+    add('rt',c/2,`Хипотенузата е ${c}, а единият остър ъгъл е 60°. Намерете прилежащия му катет.`,()=>c*C(60),'rt-sp60');
   }
 
-  // ISOSCELES TRIANGLE
-  for(let base=20;base<=40;base+=2) add('isos',base/2,`Равнобедрен триъгълник с основа ${base}. Височината към основата я разполовява — намерете полуосновата.`,()=>base/2);
-  const isoH=[[17,16],[25,14],[25,30],[26,20],[20,24],[15,18],[25,40],[37,24],[35,42],[30,36],[34,32],[29,42]];
-  for(const [leg,base] of isoH){const h=Math.sqrt(leg*leg-(base/2)*(base/2)); const hi=intOf(h);
-    if(hi>=10) add('isos',hi,`Равнобедрен триъгълник с бедра ${leg} и основа ${base}. Намерете височината към основата.`,()=>h);}
+  for(const [x,y,a,c] of [[5,8,3,5],[10,6,8,10],[13,5,12,13],[25,7,7,25],[8,8,4,5],[12,10,3,5],[6,5,4,5]]){
+    if(isInt(x*y*a/c)) add('quad',x*y*a/c,`Намерете лицето на успоредник със страни ${x} и ${y} и sin на ъгъла между тях ${frac(a,c)}.`,()=>x*y*(a/c),'quad-par');
+  }
+  for(const [s,a,c] of [[5,3,5],[10,4,5],[13,5,13],[5,4,5],[10,3,5],[13,12,13]]){
+    if(isInt(s*s*a/c)) add('quad',s*s*a/c,`Намерете лицето на ромб със страна ${s} и sin на ъгъл ${frac(a,c)}.`,()=>s*s*(a/c),'quad-rhomb');
+  }
 
-  // TRAPEZOIDS
-  const rt45=[[22,10],[25,14],[30,18],[24,11],[27,15],[28,16],[33,20],[31,18],[26,12],[40,18],[44,20],[48,25],[42,16]];
-  for(const [a,b] of rt45){const h=a-b; if(h>=10) add('trap',h,`Правоъгълен трапец с основи ${a} и ${b} и ъгъл 45° при наклонената страна. Намерете височината.`,()=>a-b);}
-  const is45=[[34,10],[40,12],[36,8],[44,12],[48,14],[50,12],[46,10],[42,14],[38,10]];
-  for(const [a,b] of is45){const h=(a-b)/2; if(Number.isInteger(h)&&h>=10) add('trap',h,`Равнобедрен трапец с основи ${a} и ${b} и ъгъл 45° при основата. Намерете височината.`,()=>(a-b)/2);}
-  const med=[[23,11],[27,13],[19,11],[25,13],[31,9],[29,11],[33,7],[24,8],[26,12],[28,10],[35,9],[39,7],[37,11],[41,7],[45,5]];
-  for(const [a,b] of med){const m=(a+b)/2; if(Number.isInteger(m)&&m>=10) add('trap',m,`Трапец с основи ${a} и ${b}. Намерете средната основа (медианата).`,()=>(a+b)/2);}
+  const IM=[[3,4,5],[4,3,5],[6,8,10],[8,6,10],[5,12,13],[12,5,13],[8,15,17],[15,8,17],
+            [7,24,25],[24,7,25],[20,21,29],[9,12,15],[12,9,15],[10,24,26],[16,30,34],[12,35,37]];
+  for(const [m,h,L] of IM){
+    add('isos',h,`Бедрото на равнобедрен триъгълник е ${L}, а sin на ъгъла при основата е ${frac(h,L)}. Намерете височината към основата.`,()=>L*(h/L),'isos-h-sin');
+    add('isos',2*m,`Бедрото е ${L}, а cos на ъгъла при основата е ${frac(m,L)}. Намерете основата.`,()=>2*L*(m/L),'isos-base-cos');
+    add('isos',h,`Основата е ${2*m}, а tg на ъгъла при основата е ${frac(h,m)}. Намерете височината.`,()=>m*(h/m),'isos-h-tg');
+    add('isos',L,`Основата е ${2*m}, а cos на ъгъла при основата е ${frac(m,L)}. Намерете бедрото.`,()=>m/(m/L),'isos-leg-cos');
+    add('isos',m*h,`Основата е ${2*m}, а tg на ъгъла при основата е ${frac(h,m)}. Намерете лицето на триъгълника.`,()=>0.5*(2*m)*(m*(h/m)),'isos-area-tg');
+  }
+  for(const [L,a,c] of [[10,4,5],[10,3,5],[5,4,5],[13,12,13],[10,2,5],[15,4,5],[13,10,13]]){
+    if(isInt(0.5*L*L*a/c)) add('isos',0.5*L*L*a/c,`Намерете лицето на равнобедрен триъгълник с бедро ${L} и sin на ъгъла между бедрата ${frac(a,c)}.`,()=>0.5*L*L*(a/c),'isos-apex-area');
+  }
+  for(const L of [2,4,6,8,10,12,14]) add('isos',L*L/4,`Намерете лицето на равнобедрен триъгълник с бедро ${L} и ъгъл между бедрата 150°.`,()=>0.5*L*L*S(150),'isos-apex150');
+
+  const PM=[[3,4,5],[4,3,5],[6,8,10],[8,6,10],[5,12,13],[12,5,13],[8,15,17],[7,24,25],[9,12,15]];
+  for(const [p,h,L] of PM){ for(const b of [3,4,5,6]){ const a=b+2*p;
+    add('trap',h,`Равнобедрен трапец с основи ${a} и ${b} и tg на ъгъла при основата ${frac(h,p)}. Намерете височината.`,()=>p*(h/p),'trap-h-tg');
+    add('trap',L,`Равнобедрен трапец с основи ${a} и ${b} и cos на ъгъла при основата ${frac(p,L)}. Намерете бедрото.`,()=>p/(p/L),'trap-leg-cos');
+    if(isInt(((a+b)/2)*h)) add('trap',((a+b)/2)*h,`Намерете лицето на равнобедрен трапец с основи ${a} и ${b} и tg на ъгъла при основата ${frac(h,p)}.`,()=>((a+b)/2)*(p*(h/p)),'trap-area');
+    add('trap',h,`Равнобедрен трапец с бедро ${L} и основи ${a} и ${b}; sin на ъгъла при основата е ${frac(h,L)}. Намерете височината.`,()=>L*(h/L),'trap-h-legsin');
+    add('trap',p,`Равнобедрен трапец с бедро ${L} и cos на ъгъла при основата ${frac(p,L)}. Намерете проекцията на бедрото върху голямата основа.`,()=>L*(p/L),'trap-proj-cos');
+    add('trap',b,`Равнобедрен трапец с голяма основа ${a} и бедро ${L}; cos на ъгъла при основата е ${frac(p,L)}. Намерете малката основа.`,()=>a-2*L*(p/L),'trap-smallbase');
+  }}
+  for(let d=1;d<=9;d++){ const a=2*d+3; add('trap',d,`Равнобедрен трапец с основи ${a} и 3 и ъгъл при основата 45°. Намерете височината.`,()=>((a-3)/2)*T(45),'trap-45iso'); }
+  for(let d=1;d<=9;d++){ const a=d+3; add('trap',d,`Правоъгълен трапец с основи ${a} и 3 и ъгъл 45° при наклонената страна. Намерете височината.`,()=>(a-3)*T(45),'trap-45right'); }
+  for(const [a,b] of [[14,8],[20,8],[22,10],[18,6],[26,10],[30,14],[24,8],[28,12],[34,10],[40,12]]){
+    const h45=(a-b)/2; if(h45>=10) add('trap',h45,`Равнобедрен трапец с основи ${a} и ${b} и ъгъл при основата 45°. Намерете височината.`,()=>((a-b)/2)*T(45),'trap-45iso');
+    if(a-b>=10) add('trap',a-b,`Правоъгълен трапец с основи ${a} и ${b} и ъгъл 45° при наклонената страна. Намерете височината.`,()=>(a-b)*T(45),'trap-45right');
+  }
+
+  for(let k=1;k<=30;k++){
+    add('identity',k,`Опростете и пресметнете: <b>${k}</b> · ${fbar('1 − sin²α','cos²α')}.`,()=>k*(1-S(37)**2)/C(37)**2,'id-onesin');
+    add('identity',k,`Опростете и пресметнете: <b>${k}</b> · ${fbar('cos²α','1 − sin²α')}.`,()=>k*C(37)**2/(1-S(37)**2),'id-cosone');
+    add('identity',k,`Опростете и пресметнете: <b>${k}·(1 + tg²α)·cos²α</b>.`,()=>k*(1+T(37)**2)*C(37)**2,'id-tgprod');
+    add('identity',k,`Опростете и пресметнете: <b>${k}·(1 + tg²α)·(1 − sin²α)</b>.`,()=>k*(1+T(37)**2)*(1-S(37)**2),'id-tgsin');
+    add('identity',k,`Опростете и пресметнете: <b>${k}·(sin²α + cos²α)</b>.`,()=>k*(S(37)**2+C(37)**2),'id-pyth');
+    add('identity',k,`Опростете и пресметнете: <b>${k}</b> · ${fbar('sin²α','1 + cosα')} : (1 − cosα).`,()=>k*(S(37)**2/(1+C(37)))/(1-C(37)),'id-div');
+  }
+  for(let k=10;k<=24;k++) add('special',k,`Пресметнете <b>${k}·tg 45°</b>.`,()=>k*T(45),'sp-tg');
+  for(let k=20;k<=44;k+=2) add('special',k/2,`Пресметнете <b>${k}·sin 30°</b>.`,()=>k*S(30),'sp-sin');
+
+  // TRIG IDENTITIES — simplify the expression; the result equals the coefficient k
+  for(let k=1;k<=30;k++){
+    add('identity',k,`Опростете и пресметнете: <b>${k}·(sin²α + cos²α)</b>.`,()=>k*(S(37)**2+C(37)**2),'id-pyth');
+    add('identity',k,`Опростете и пресметнете: <b>${k}·</b>`+fbar('1 − sin²α','cos²α')+`.`,()=>k*(1-S(37)**2)/C(37)**2,'id-onesin');
+    add('identity',k,`Опростете и пресметнете: <b>${k}·(1 + tg²α)·cos²α</b>.`,()=>k*(1+T(37)**2)*C(37)**2,'id-tgprod');
+    add('identity',k,`Опростете и пресметнете: <b>${k}·(1 + tg²α)·(1 − sin²α)</b>.`,()=>k*(1+T(37)**2)*(1-S(37)**2),'id-prod');
+    add('identity',k,`Опростете и пресметнете: <b>${k}·</b>`+fbar('sin²α','1 + cos α')+` : (1 − cos α).`,()=>k*(S(37)**2/(1+C(37)))/(1-C(37)),'id-div');
+  }
 
   return tasks;
 }
 
-const CATS={easy:['special','rt'], medium:['special','identity','isos','rt'], hard:['special','identity','trap']};
+function paramSpecial(d){return [
+ {text:`Пресметнете <b>${d}·tg 45°</b>.`,ans:d},
+ {text:`Пресметнете <b>${2*d}·sin 30°</b>.`,ans:d},
+ {text:`Пресметнете <b>${2*d}·cos 60°</b>.`,ans:d},
+ {text:`За остър ъгъл α: <b>${d}·(sin²α + cos²α)</b>.`,ans:d},
+ {text:`Пресметнете <b>${2*d}·sin 45°·cos 45°</b>.`,ans:d},
+ {text:`Пресметнете <b>${d}·sin 30° + ${d}·cos 60°</b>.`,ans:d},
+ {text:`Пресметнете <b>${3*d}·sin 30° − ${d}·cos 60°</b>.`,ans:d},
+ {text:`Пресметнете <b>${3*d}·cos 60° − ${d}·sin 30°</b>.`,ans:d},
+ {text:`Пресметнете <b>${4*d}·sin 30° − ${d}·tg 45°</b>.`,ans:d},
+];}
 
-// pick 9 tasks with DISTINCT answer-values from allowed categories
+const CATS_FIRST={easy:['rt','quad'], medium:['isos','rt','quad'], hard:['trap']};
+const CATS_CELL ={easy:['rt','quad','special','identity'], medium:['isos','rt','quad','special','identity'], hard:['trap','special','identity']};
+
 function pickTasks(bank, level, rnd){
-  const allowed=new Set(CATS[level]);
-  const byVal={};
-  for(const t of bank) if(allowed.has(t.cat)){ (byVal[t.ans]=byVal[t.ans]||[]).push(t); }
-  let vals=Object.keys(byVal).map(Number);
-  // shuffle values, take 9 distinct
-  for(let i=vals.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[vals[i],vals[j]]=[vals[j],vals[i]];}
-  const chosenVals=vals.slice(0,9);
-  const chosen=chosenVals.map(v=>{const arr=byVal[v];return arr[Math.floor(rnd()*arr.length)];});
-  // shuffle task display order
+  const usedVals=new Set(); const chosen=[];
+  const idts=bank.filter(t=>t.cat==='identity'&&t.ans>=10);
+  for(let i=idts.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[idts[i],idts[j]]=[idts[j],idts[i]];}
+  const usedKinds=new Set();
+  for(const t of idts){ if(chosen.length>=2)break; if(!usedVals.has(t.ans)&&!usedKinds.has(t.kind)){chosen.push(t);usedVals.add(t.ans);usedKinds.add(t.kind);} }
+  const allowed=new Set(CATS_FIRST[level]); const byKind={};
+  for(const t of bank) if(allowed.has(t.cat)&&t.ans>=10){ (byKind[t.kind]=byKind[t.kind]||[]).push(t); }
+  let kinds=Object.keys(byKind);
+  for(const k of kinds){const arr=byKind[k];for(let i=arr.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
+  for(let i=kinds.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[kinds[i],kinds[j]]=[kinds[j],kinds[i]];}
+  let pass=0;
+  while(chosen.length<9 && pass<25){
+    for(const k of kinds){ if(chosen.length>=9)break; const arr=byKind[k]; let pick=null;
+      for(const tk of arr){ if(!usedVals.has(tk.ans)){pick=tk;break;} }
+      if(pick){ chosen.push(pick); usedVals.add(pick.ans); }
+    }
+    pass++;
+  }
+  if(chosen.length<9){ for(const tk of bank){ if(chosen.length>=9)break; if(allowed.has(tk.cat)&&tk.ans>=10&&!usedVals.has(tk.ans)){chosen.push(tk);usedVals.add(tk.ans);} } }
   for(let i=chosen.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[chosen[i],chosen[j]]=[chosen[j],chosen[i]];}
-  return chosen; // 9 tasks, 9 distinct answer-values (all >=10)
+  return chosen.slice(0,9);
+}
+function poolGE10(bank, level){const allowed=new Set(CATS_CELL[level]);return bank.filter(t=>allowed.has(t.cat)&&t.ans>=10);}
+function digitPool(bank, level, d){
+  const allowed=new Set(CATS_CELL[level]); const seen=new Set(); const out=[];
+  for(const t of bank) if(allowed.has(t.cat)&&t.ans===d&&!seen.has(t.text)){seen.add(t.text);out.push({text:t.text,ans:d});}
+  for(const t of paramSpecial(d)) if(!seen.has(t.text)){seen.add(t.text);out.push(t);}
+  return out;
 }
 
 // ---------- sudoku ----------
@@ -278,7 +378,7 @@ function shuffle(a,rnd){for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(
 function makePuzzleAllDigits(rnd,tc){for(let k=0;k<30;k++){const r=makePuzzle(rnd,tc);const s=new Set();for(const v of r.puz)if(v)s.add(v);if(s.size===9)return r;}return makePuzzle(rnd,tc);}
 
 let STATE=null;
-let scope='givens', mode='interactive';
+let emptyMode='logic', mode='interactive';
 
 function generate(){
   const bank=buildBank();
@@ -287,11 +387,18 @@ function generate(){
   for(const L of LEVELS){
     const {sol,puz}=makePuzzleAllDigits(rnd,L.clues);
     const tasks=pickTasks(bank,L.key,rnd);
-    const ord=tasks.map((t,i)=>({i,a:t.ans})).sort((x,y)=>x.a-y.a);  // ascending
+    const ord=tasks.map((t,i)=>({i,a:t.ans})).sort((x,y)=>x.a-y.a);
     const digitOfTask={}, tagOfDigit={}, valOfDigit={};
     ord.forEach((o,r)=>{digitOfTask[o.i]=r+1;});
     for(let d=1;d<=9;d++){const ti=ord[d-1].i; tagOfDigit[d]='Т'+(ti+1); valOfDigit[d]=tasks[ti].ans;}
-    levels.push({L,sol,puz,tasks,digitOfTask,tagOfDigit,valOfDigit});
+    let poolI=poolGE10(bank,L.key).slice();
+    for(let i=poolI.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[poolI[i],poolI[j]]=[poolI[j],poolI[i]];}
+    const dpool={}, didx={};
+    for(let d=1;d<=9;d++){ dpool[d]=digitPool(bank,L.key,d).slice(); for(let i=dpool[d].length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[dpool[d][i],dpool[d][j]]=[dpool[d][j],dpool[d][i]];} didx[d]=0; }
+    const cellTask={}, cellTaskPrint={}; let pi=0;
+    for(let p=0;p<81;p++){ if(puz[p]===0){ cellTask[p]=poolI[pi%poolI.length]; pi++;
+      const d=sol[p]; cellTaskPrint[p]=dpool[d][didx[d]%dpool[d].length]; didx[d]++; } }
+    levels.push({L,sol,puz,tasks,digitOfTask,tagOfDigit,valOfDigit,cellTask,cellTaskPrint});
   }
   STATE={levels};
 }
@@ -299,12 +406,17 @@ function generate(){
 function renderView(){
   const levelsEl=document.getElementById('levels'); levelsEl.innerHTML='';
   const keysEl=document.getElementById('keys'); keysEl.innerHTML='';
+  const printTask=(mode==='print' && emptyMode==='task');
+  document.body.classList.toggle('pt', printTask);
   document.getElementById('modeNote').textContent =
-    (scope==='all'?'Етикети на всички полета: цялата решетка може да се попълни само чрез задачите (без логика). ':'Етикети само на дадените: реши задачите за началните цифри, после довърши судокуто по логиката. ')
-    + (mode==='print'?'Изглед за печат — без полета за въвеждане; реши на ръка по ранг-правилото.':'Интерактивно — въведи отговор и цифрата се появява сама.');
+    (printTask?'Печат „Реши със задача“: всяко празно поле има номер; реши задачата със същия номер от списъка и запиши получената цифра в полето.'
+     : mode==='print'?'Изглед за печат — реши деветте задачи и приложи ранг-правилото, после реши судокуто на хартия.'
+     : emptyMode==='task'?'Празни полета „със задача“: кликни празно квадратче, реши неговата задача и цифрата се поставя сама. Всяко поле има различна задача.'
+     : 'Празни полета „с логика“: реши деветте задачи, за да се появят началните цифри, после довърши судокуто по логиката.');
 
   for(const lv of STATE.levels){
-    const {L,sol,puz,tasks,digitOfTask,tagOfDigit}=lv;
+    const {L,sol,puz,tasks,digitOfTask,tagOfDigit,cellTask,cellTaskPrint}=lv;
+    const taskInteractive=(mode==='interactive' && emptyMode==='task');
     const sec=document.createElement('section'); sec.className='level lvl-'+L.key;
     sec.innerHTML=`<div class="lvl-head"><div class="lvl-no">${L.no}</div>
       <div class="lvl-meta"><h2>${L.diff} · ${L.fig}</h2><p>${L.desc}</p></div></div>
@@ -314,17 +426,24 @@ function renderView(){
         <div class="gridctl"></div>
       </div>
       <div class="tasks"><h3>Тригонометрични задачи</h3><div class="prog">Решени задачи: <b class="pc">0</b>/9</div><ol class="tlist"></ol></div></div>`;
-    const gridEl=sec.querySelector('.grid'); const cellByDigit={};
+    const gridEl=sec.querySelector('.grid'); const cellByDigit={}; let emptyTotal=0, emptyDone=0; const emptyList=[];
     for(let p=0;p<81;p++){
       const r=p/9|0,c=p%9; const cell=document.createElement('div'); let cls='cell';
       if(c%3===2&&c!==8)cls+=' rb'; if(r%3===2&&r!==8)cls+=' bb';
       const isGiven=puz[p]!==0;
-      const showTag=(scope==='all')||isGiven;
-      if(mode==='print'){
-        if(showTag){ cls+=' tag'+(isGiven?' isgiven':''); cell.className=cls; cell.textContent=tagOfDigit[sol[p]]; }
+      if(printTask){
+        if(isGiven){ cls+=' given'; cell.className=cls; cell.textContent=sol[p]; }
+        else { const idx=emptyList.length+1; cls+=' tag'; cell.className=cls; cell.textContent=idx; emptyList.push({idx,task:cellTaskPrint[p]}); }
+      } else if(mode==='print'){
+        if(isGiven){ cls+=' tag isgiven'; cell.className=cls; cell.textContent=tagOfDigit[sol[p]]; }
         else { cell.className=cls; }
-      } else { // interactive
-        if(showTag){ cls+=' locked'; cell.className=cls; cell.textContent=tagOfDigit[sol[p]];
+      } else if(taskInteractive){
+        if(isGiven){ cls+=' given'; cell.className=cls; cell.textContent=sol[p]; }
+        else { emptyTotal++; cls+=' qcell'; cell.className=cls; cell.textContent='?';
+          cell.addEventListener('click',()=>{ if(cell.dataset.done) return; openCellTask(cell,p,lv,()=>{ emptyDone++; sec.querySelector('.ec').textContent=emptyDone; }); });
+        }
+      } else {
+        if(isGiven){ cls+=' locked'; cell.className=cls; cell.textContent=tagOfDigit[sol[p]];
           const d=sol[p]; (cellByDigit[d]=cellByDigit[d]||[]).push(cell); }
         else { cell.className=cls; const inp=document.createElement('input'); inp.setAttribute('inputmode','numeric'); inp.maxLength=1;
           inp.addEventListener('input',()=>{inp.value=inp.value.replace(/[^1-9]/g,'').slice(0,1);cell.classList.remove('bad','good');});
@@ -332,28 +451,35 @@ function renderView(){
       }
       gridEl.appendChild(cell);
     }
-    // tasks
     const tl=sec.querySelector('.tlist'); let solved=0; const solvedSet=new Set();
-    tasks.forEach((t,i)=>{
-      const li=document.createElement('li');
-      li.innerHTML=`<span class="ttag">Т${i+1}</span><span class="ttxt">${t.text}</span>`;
-      if(mode==='interactive'){
-        const tin=document.createElement('input'); tin.className='tin'; tin.setAttribute('inputmode','numeric'); tin.placeholder='?';
-        li.appendChild(tin);
-        tin.addEventListener('input',()=>{ tin.classList.remove('tbad'); const val=parseInt(tin.value,10);
-          if(val===t.ans && !solvedSet.has(i)){ solvedSet.add(i); li.classList.add('tsolved'); tin.readOnly=true;
-            const d=digitOfTask[i]; (cellByDigit[d]||[]).forEach(cell=>{cell.classList.remove('locked');cell.classList.add('given');cell.textContent=d;});
-            solved++; sec.querySelector('.pc').textContent=solved;
-          } else if(tin.value.length>=2 && val!==t.ans){ tin.classList.add('tbad'); } });
-      } else {
-        const box=document.createElement('span'); box.className='tin'; box.style.display='inline-block'; li.appendChild(box);
-      }
-      tl.appendChild(li);
-    });
-    if(mode==='interactive'){ sec.querySelector('.prog').style.display=''; } else { sec.querySelector('.prog').style.display='none'; }
-    // grid controls (interactive + givens scope only -> sudoku check)
+    const prog=sec.querySelector('.prog'); const h3=sec.querySelector('.tasks h3');
+    if(printTask){
+      h3.textContent='Задачи за празните полета (отговорът е цифрата за полето)';
+      prog.style.display='none';
+      emptyList.forEach(e=>{ const li=document.createElement('li');
+        li.innerHTML=`<span class="ttag">${e.idx}</span><span class="ttxt">${e.task.text}</span><span class="tin"></span>`;
+        tl.appendChild(li); });
+    } else if(taskInteractive){
+      tl.style.display='none'; prog.innerHTML='Решени полета: <b class="ec">0</b>/'+emptyTotal;
+    } else {
+      tasks.forEach((t,i)=>{
+        const li=document.createElement('li');
+        li.innerHTML=`<span class="ttag">Т${i+1}</span><span class="ttxt">${t.text}</span>`;
+        if(mode==='interactive'){
+          const tin=document.createElement('input'); tin.className='tin'; tin.setAttribute('inputmode','numeric'); tin.placeholder='?';
+          li.appendChild(tin);
+          tin.addEventListener('input',()=>{ tin.classList.remove('tbad'); const val=parseInt(tin.value,10);
+            if(val===t.ans && !solvedSet.has(i)){ solvedSet.add(i); li.classList.add('tsolved'); tin.readOnly=true;
+              const d=digitOfTask[i]; (cellByDigit[d]||[]).forEach(cell=>{cell.classList.remove('locked');cell.classList.add('given');cell.textContent=d;});
+              solved++; sec.querySelector('.pc').textContent=solved;
+            } else if(tin.value.length>=2 && val!==t.ans){ tin.classList.add('tbad'); } });
+        } else { const box=document.createElement('span'); box.className='tin'; box.style.display='inline-block'; li.appendChild(box); }
+        tl.appendChild(li);
+      });
+      if(mode!=='interactive') prog.style.display='none';
+    }
     const gc=sec.querySelector('.gridctl');
-    if(mode==='interactive' && scope==='givens'){
+    if(mode==='interactive' && emptyMode==='logic'){
       gc.innerHTML='<button class="small check">Провери</button><button class="small clear">Нулирай</button><span class="gridmsg"></span>';
       gc.querySelector('.check').addEventListener('click',()=>{
         let filled=0,wrong=0,total=0; const cells=gridEl.querySelectorAll('.cell');
@@ -366,12 +492,15 @@ function renderView(){
         else{msg.className='gridmsg err';msg.textContent='Има '+wrong+' грешни клетки.';}
       });
       gc.querySelector('.clear').addEventListener('click',()=>{gridEl.querySelectorAll('input').forEach(i=>i.value='');gridEl.querySelectorAll('.cell').forEach(c=>c.classList.remove('good','bad'));gc.querySelector('.gridmsg').textContent='';});
+    } else if(taskInteractive){
+      gc.innerHTML='<span class="note">Кликни празно квадратче „?“, реши задачата и цифрата идва сама.</span>';
+    } else if(printTask){
+      gc.innerHTML='<span class="note">За печат: Файл → Печат. Реши задачите по номера и впиши цифрите в полетата.</span>';
     } else if(mode==='print'){
       gc.innerHTML='<span class="note">За печат: Файл → Печат. Реши на хартия по ранг-правилото.</span>';
     }
     levelsEl.appendChild(sec);
 
-    // answer key
     const ord=tasks.map((t,i)=>({i,a:t.ans})).sort((x,y)=>x.a-y.a);
     const ranked=ord.map((o,r)=>`${o.a}→${r+1}`).join(' · ');
     let kg='<div class="grid">'; for(let p=0;p<81;p++){const r=p/9|0,c=p%9;let cls='cell sol'+(puz[p]!==0?' given':'');if(c%3===2&&c!==8)cls+=' rb';if(r%3===2&&r!==8)cls+=' bb';kg+=`<div class="${cls}">${sol[p]}</div>`;} kg+='</div>';
@@ -385,7 +514,7 @@ function renderView(){
 
 function setSeg(id,val,cb){ const seg=document.getElementById(id);
   seg.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.v===val)); cb(val); }
-document.getElementById('segScope').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; setSeg('segScope',b.dataset.v,v=>{scope=v;}); renderView();});
+document.getElementById('segEmpty').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; setSeg('segEmpty',b.dataset.v,v=>{emptyMode=v;}); renderView();});
 document.getElementById('segMode').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; setSeg('segMode',b.dataset.v,v=>{mode=v;}); renderView();});
 document.getElementById('regen').addEventListener('click',()=>{generate();renderView();});
 let printScope='all';
@@ -396,6 +525,32 @@ document.getElementById('printBtn').addEventListener('click',()=>{
   setTimeout(()=>window.print(), 60);
 });
 document.getElementById('toggle').addEventListener('click',()=>{const ak=document.getElementById('answerkey');ak.hidden=!ak.hidden;document.getElementById('toggle').textContent=ak.hidden?'Покажи отговорите':'Скрий отговорите';if(!ak.hidden)ak.scrollIntoView({behavior:'smooth'});});
+
+let cpCur=null;
+function positionPopup(cell){ const pop=document.getElementById('cellPopup'); const r=cell.getBoundingClientRect(); const w=280,h=180;
+  let left=r.right+8, top=r.top-8;
+  if(left+w>window.innerWidth-8) left=r.left-w-8;
+  if(left<8) left=8;
+  if(top+h>window.innerHeight-8) top=Math.max(8, window.innerHeight-h-8);
+  if(top<8) top=8;
+  pop.style.left=left+'px'; pop.style.top=top+'px';
+}
+function openCellTask(cell,p,lv,onSolved){
+  cpCur={cell,ans:lv.cellTask[p].ans,digit:lv.sol[p],onSolved};
+  document.getElementById('cpTask').innerHTML=lv.cellTask[p].text;
+  const inp=document.getElementById('cpInput'); inp.value=''; const msg=document.getElementById('cpMsg'); msg.textContent=''; msg.className='cp-msg';
+  const pop=document.getElementById('cellPopup'); pop.hidden=false; positionPopup(cell); inp.focus();
+}
+function closeCellTask(){ document.getElementById('cellPopup').hidden=true; cpCur=null; }
+function confirmCellTask(){ if(!cpCur) return; const inp=document.getElementById('cpInput'); const msg=document.getElementById('cpMsg');
+  if(parseInt(inp.value,10)===cpCur.ans){ cpCur.cell.textContent=cpCur.digit; cpCur.cell.classList.remove('qcell'); cpCur.cell.classList.add('given'); cpCur.cell.dataset.done='1'; if(cpCur.onSolved)cpCur.onSolved(); closeCellTask(); }
+  else { msg.className='cp-msg err'; msg.textContent='Не съвпада — провери сметката и опитай пак.'; if(inp.select)inp.select(); }
+}
+document.getElementById('cpOk').addEventListener('click',confirmCellTask);
+document.getElementById('cpInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();confirmCellTask();} });
+document.getElementById('cpClose').addEventListener('click',closeCellTask);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeCellTask(); });
+document.addEventListener('click',e=>{ const pop=document.getElementById('cellPopup'); if(pop.hidden) return; if(pop.contains(e.target)) return; if(e.target.classList&&e.target.classList.contains('qcell')) return; closeCellTask(); }, true);
 
 (function(){
   const m=document.getElementById('mascot'); if(!m) return;
