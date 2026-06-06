@@ -152,6 +152,18 @@ body.pt .rule{display:none}
 .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .14em}
 .frac>span{padding:0 .35em;line-height:1.22}
 .frac .fnum{border-bottom:1.6px solid currentColor}
+
+.nameinp{height:30px;border:1.5px solid var(--ink);border-radius:8px;padding:0 8px;font-size:13px;min-width:150px;font-family:inherit}
+.rcard{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(540px,92vw);max-height:86vh;overflow:auto;background:#fffdf7;border:2px solid var(--ink);border-radius:16px;box-shadow:0 20px 60px rgba(31,42,68,.3);padding:18px 18px 14px;z-index:60}
+.rcard[hidden]{display:none}
+.rcard h3{font-family:'Fraunces';margin:0 0 8px;font-size:18px}
+.rc-meta{font-size:13px;margin-bottom:8px;color:var(--ink)}
+.rc-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+.rc-tbl th,.rc-tbl td{border:1px solid var(--line);padding:5px 8px;text-align:left}
+.rc-tbl th{background:#f3ece0;font-family:'Fraunces'}
+.rc-total{margin-top:10px;font-family:'Fraunces';font-weight:600}
+.rc-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+@media print{ body.rcard-print *{visibility:hidden!important} body.rcard-print #resultCard,body.rcard-print #resultCard *{visibility:visible!important} body.rcard-print #resultCard{position:absolute;left:0;top:0;transform:none;box-shadow:none;border:1px solid #000;width:auto;max-height:none} body.rcard-print .rc-actions{display:none!important} }
 </style></head><body><div class="wrap">
 <header class="masthead">
   <div class="mast-row">
@@ -178,6 +190,7 @@ body.pt .rule{display:none}
     <div class="scale"><b>1</b> най-малък отговор &nbsp;→&nbsp; <b>2</b> &nbsp;→&nbsp; <b>3</b> &nbsp;→ … →&nbsp; <b>9</b> най-голям отговор</div>
   </div>
   <div class="controls">
+    <div class="cgroup"><span class="lbl">Име</span><input id="studentName" class="nameinp" placeholder="Име на ученика" maxlength="40"></div>
     <div class="cgroup"><span class="lbl">Празни полета</span><div class="seg" id="segEmpty">
       <button data-v="logic" class="active">Реши с логика</button><button data-v="task">Реши със задача</button></div></div>
     <div class="cgroup teacher-only"><span class="lbl">Режим</span><div class="seg" id="segMode">
@@ -187,7 +200,9 @@ body.pt .rule{display:none}
     <div class="actions">
       <button class="act teacher-only" id="printBtn">🖨 Печат</button>
       <button class="act" id="regen">↻ Нова задача</button>
+      <button class="act" id="resultBtn">✓ Резултат</button>
       <button class="act ghost teacher-only" id="toggle">Покажи отговорите</button>
+      <button class="act ghost teacher-only" id="logBtn">📋 Дневник</button>
     </div>
   </div>
   <p class="note" id="modeNote"></p>
@@ -203,6 +218,16 @@ body.pt .rule{display:none}
   <div class="cp-task" id="cpTask"></div>
   <div class="cp-row"><input id="cpInput" class="cp-in" inputmode="numeric" placeholder="отговор"><button id="cpOk" class="cp-ok">Постави</button></div>
   <div class="cp-msg" id="cpMsg"></div>
+</div>
+<div class="rcard" id="resultCard" hidden>
+  <button class="cp-x" id="rcClose" aria-label="Затвори">×</button>
+  <div class="rc-body" id="rcBody"></div>
+  <div class="rc-actions">
+    <button class="small" id="rcPrint">🖨 Печат</button>
+    <button class="small" id="rcSave">💾 Изтегли (.txt)</button>
+    <button class="small" id="rcCopy">Копирай</button>
+    <button class="small" id="rcCloseB">Затвори</button>
+  </div>
 </div>
 <div class="divider">✦ ✦ ✦</div>
 <section class="answerkey" id="answerkey" hidden>
@@ -431,7 +456,8 @@ function renderView(){
   { const st=document.getElementById('stamp'); if(st) st.textContent='Вариант '+STATE.code+' · '+STATE.date;
     const ph=document.getElementById('printhead'); if(ph) ph.innerHTML='<div class="ph-title">Тригонометрично судоку — функции на остър ъгъл</div>'+
       '<div class="ph-meta">Вариант <b>'+STATE.code+'</b> · Генериран на '+STATE.date+'</div>'+
-      '<div class="ph-fields">Име: ________________________   Клас: ______   № ____   Дата: ____________</div>'; }
+      '<div class="ph-fields">Име: '+(((document.getElementById('studentName')||{}).value||'').trim()||'________________________')+'   Клас: ______   № ____   Дата: ____________</div>'; }
+  STATE.graders=[];
   document.getElementById('modeNote').textContent =
     (printTask?'Печат „Реши със задача“: реши ЗАДЪЛЖИТЕЛНО деветте задачи (Т1–Т9) и по ранг-правилото впиши Т-цифрите. Празните полета са номерирани — по желание реши задачата с номера на полето и впиши цифрата вместо да редиш по логика. Нищо не е попълнено предварително.'
      : mode==='print'?'Изглед за печат — реши деветте задачи и приложи ранг-правилото, после реши судокуто на хартия.'
@@ -531,6 +557,13 @@ function renderView(){
     } else if(mode==='print'){
       gc.innerHTML='<span class="note">За печат: Файл → Печат. Реши на хартия по ранг-правилото.</span>';
     }
+    STATE.graders.push((function(L,sol,gridEl){ return function(){
+      if(mode!=='interactive') return {no:L.no,diff:L.diff,status:'само в интерактивен режим',detail:''};
+      if(emptyMode==='task') return {no:L.no,diff:L.diff,status:(emptyDone>=emptyTotal&&emptyTotal>0)?'вярно':'непълно',detail:emptyDone+'/'+emptyTotal+' полета'};
+      let total=0,correct=0; gridEl.querySelectorAll('.cell').forEach((cell,p)=>{ const inp=cell.querySelector('input'); if(!inp)return; total++; if(parseInt(inp.value,10)===sol[p])correct++; });
+      const status= solved<9?'незавършено (реши 9-те задачи)':(correct<total?'има грешни/празни':'вярно');
+      return {no:L.no,diff:L.diff,status,detail:correct+'/'+total+' клетки · '+solved+'/9 задачи'};
+    };})(L,sol,gridEl));
     levelsEl.appendChild(sec);
 
     const ord=tasks.map((t,i)=>({i,a:t.ans})).sort((x,y)=>x.a-y.a);
@@ -558,6 +591,49 @@ document.getElementById('printBtn').addEventListener('click',()=>{
 });
 document.getElementById('toggle').addEventListener('click',()=>{const ak=document.getElementById('answerkey');ak.hidden=!ak.hidden;document.getElementById('toggle').textContent=ak.hidden?'Покажи отговорите':'Скрий отговорите';if(!ak.hidden)ak.scrollIntoView({behavior:'smooth'});});
 
+let lastResultText='';
+function gradeAll(){ return (STATE.graders||[]).map(g=>g()); }
+function buildResultText(name,time,rows){
+  let s='Тригонометрично судоку — резултат\n';
+  s+='Име: '+(name||'—')+'\nВариант: '+STATE.code+'\nДата: '+STATE.date+' '+time+'\n\n';
+  rows.forEach(r=>{ s+=r.no+' · '+r.diff+': '+r.status+(r.detail?(' ('+r.detail+')'):'')+'\n'; });
+  const ok=rows.length&&rows.every(r=>r.status==='вярно');
+  return s+'\n'+(ok?'Всичко е решено вярно.':'Не всички нива са вярно.');
+}
+function showResult(){
+  const name=((document.getElementById('studentName')||{}).value||'').trim();
+  const now=new Date(); const time=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const rows=gradeAll(); const ok=rows.length&&rows.every(r=>r.status==='вярно');
+  let html='<h3>Резултат</h3><div class="rc-meta">Име: <b>'+(name||'—')+'</b> · Вариант <b>'+STATE.code+'</b> · '+STATE.date+' '+time+'</div>';
+  html+='<table class="rc-tbl"><tr><th>Ниво</th><th>Статус</th><th>Детайли</th></tr>';
+  rows.forEach(r=>{ html+='<tr><td>'+r.no+' · '+r.diff+'</td><td>'+(r.status==='вярно'?'✓ вярно':r.status)+'</td><td>'+(r.detail||'')+'</td></tr>'; });
+  html+='</table><div class="rc-total">'+(ok?'🎉 Всичко е решено вярно!':'Все още не всички нива са решени вярно.')+'</div>';
+  document.getElementById('rcBody').innerHTML=html; document.getElementById('resultCard').hidden=false;
+  lastResultText=buildResultText(name,time,rows);
+  try{ const k='tsudoku_log'; const arr=JSON.parse(localStorage.getItem(k)||'[]'); arr.push({name,code:STATE.code,date:STATE.date,time,rows:rows.map(r=>({no:r.no,status:r.status}))}); localStorage.setItem(k,JSON.stringify(arr.slice(-300))); }catch(e){}
+}
+function showLog(){
+  let arr=[]; try{ arr=JSON.parse(localStorage.getItem('tsudoku_log')||'[]'); }catch(e){}
+  let html='<h3>Дневник с резултати ('+arr.length+')</h3>';
+  if(!arr.length){ html+='<p>Няма записани резултати на това устройство. Записва се при натискане на „Резултат".</p>'; }
+  else { html+='<table class="rc-tbl"><tr><th>Име</th><th>Вариант</th><th>Дата</th><th>Резултат</th></tr>';
+    arr.slice().reverse().forEach(e=>{ const ok=(e.rows||[]).length&&(e.rows||[]).every(r=>r.status==='вярно'); html+='<tr><td>'+(e.name||'—')+'</td><td>'+e.code+'</td><td>'+e.date+' '+(e.time||'')+'</td><td>'+(ok?'✓ всичко вярно':(e.rows||[]).map(r=>r.no+': '+r.status).join('; '))+'</td></tr>'; });
+    html+='</table><div class="rc-actions"><button class="small" id="logClear">Изчисти дневника</button></div>'; }
+  document.getElementById('rcBody').innerHTML=html; document.getElementById('resultCard').hidden=false;
+  lastResultText=arr.map(e=>(e.name||'—')+' | '+e.code+' | '+e.date+' '+(e.time||'')+' | '+((e.rows||[]).map(r=>r.no+':'+r.status).join('; '))).join('\n');
+  const lc=document.getElementById('logClear'); if(lc) lc.addEventListener('click',()=>{ try{ localStorage.removeItem('tsudoku_log'); }catch(e){} showLog(); });
+}
+function dlText(text,fname){ try{ const b=new Blob([text],{type:'text/plain;charset=utf-8'}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1500);}catch(e){} }
+(function(){
+  const rb=document.getElementById('resultBtn'); if(rb) rb.addEventListener('click',showResult);
+  const lb=document.getElementById('logBtn'); if(lb) lb.addEventListener('click',showLog);
+  const hide=()=>{ const c=document.getElementById('resultCard'); if(c) c.hidden=true; };
+  const x=document.getElementById('rcClose'); if(x) x.addEventListener('click',hide);
+  const xb=document.getElementById('rcCloseB'); if(xb) xb.addEventListener('click',hide);
+  const sv=document.getElementById('rcSave'); if(sv) sv.addEventListener('click',()=>dlText(lastResultText,'rezultat_'+STATE.code+'.txt'));
+  const cp=document.getElementById('rcCopy'); if(cp) cp.addEventListener('click',()=>{ try{ navigator.clipboard.writeText(lastResultText); }catch(e){} });
+  const pr=document.getElementById('rcPrint'); if(pr) pr.addEventListener('click',()=>{ document.body.classList.add('rcard-print'); setTimeout(()=>{ try{window.print();}catch(e){} setTimeout(()=>document.body.classList.remove('rcard-print'),300); },60); });
+})();
 let teacher=false;
 function setTeacher(on){
   teacher=!!on;
