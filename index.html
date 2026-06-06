@@ -133,6 +133,9 @@ footer{margin-top:38px;border-top:1px solid var(--line);padding-top:12px;font-si
  .credit{margin:14px 0 0} .credit .badge{background:#fff}
  .mascot-wrap{display:none!important}
 }
+.cell.qnum{color:#b06a00;font-style:italic;font-size:12px;background:#fff}
+.subhead{font-family:'Fraunces';font-weight:600;font-size:13px;margin:14px 0 6px;color:var(--accent);border-top:1px dashed var(--line);padding-top:10px}
+.ttag.num{background:#fff3df;color:#b06a00}
 .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .18em;line-height:1.05}
 .frac .fnum{border-bottom:1.6px solid currentColor;padding:0 .3em}
 .frac .fden{padding:1px .3em 0}
@@ -409,9 +412,9 @@ function renderView(){
   const levelsEl=document.getElementById('levels'); levelsEl.innerHTML='';
   const keysEl=document.getElementById('keys'); keysEl.innerHTML='';
   const printTask=(mode==='print' && emptyMode==='task');
-  document.body.classList.toggle('pt', printTask);
+  document.body.classList.remove('pt');
   document.getElementById('modeNote').textContent =
-    (printTask?'Печат „Реши със задача“: всяко поле има номер (нищо не е попълнено). Реши задачата със същия номер от списъка и запиши получената цифра в полето. Накрая всеки ред, стълб и блок трябва да съдържат цифрите 1–9 — това е самопроверката.'
+    (printTask?'Печат „Реши със задача“: реши ЗАДЪЛЖИТЕЛНО деветте задачи (Т1–Т9) и по ранг-правилото впиши Т-цифрите. Празните полета са номерирани — по желание реши задачата с номера на полето и впиши цифрата вместо да редиш по логика. Нищо не е попълнено предварително.'
      : mode==='print'?'Изглед за печат — реши деветте задачи и приложи ранг-правилото, после реши судокуто на хартия.'
      : emptyMode==='task'?'Празни полета „със задача“: кликни празно квадратче, реши неговата задача и цифрата се поставя сама. Всяко поле има различна задача.'
      : 'Празни полета „с логика“: реши деветте задачи, за да се появят началните цифри, после довърши судокуто по логиката.');
@@ -434,7 +437,8 @@ function renderView(){
       if(c%3===2&&c!==8)cls+=' rb'; if(r%3===2&&r!==8)cls+=' bb';
       const isGiven=puz[p]!==0;
       if(printTask){
-        const idx=emptyList.length+1; cls+=' tag'; cell.className=cls; cell.textContent=idx; emptyList.push({idx,task:cellTaskPrint[p]});
+        if(isGiven){ cls+=' tag isgiven'; cell.className=cls; cell.textContent=tagOfDigit[sol[p]]; }
+        else { const idx=emptyList.length+1; cls+=' qnum'; cell.className=cls; cell.textContent=idx; emptyList.push({idx,task:cellTaskPrint[p]}); }
       } else if(mode==='print'){
         if(isGiven){ cls+=' tag isgiven'; cell.className=cls; cell.textContent=tagOfDigit[sol[p]]; }
         else { cell.className=cls; }
@@ -455,11 +459,19 @@ function renderView(){
     const tl=sec.querySelector('.tlist'); let solved=0; const solvedSet=new Set();
     const prog=sec.querySelector('.prog'); const h3=sec.querySelector('.tasks h3');
     if(printTask){
-      h3.textContent='Задачи за всички полета (отговорът е цифрата за съответното поле)';
+      h3.textContent='Задължителни: 9 задачи (дават Т-цифрите по ранг-правилото)';
       prog.style.display='none';
-      emptyList.forEach(e=>{ const li=document.createElement('li');
-        li.innerHTML=`<span class="ttag">${e.idx}</span><span class="ttxt">${e.task.text}</span><span class="tin"></span>`;
+      tasks.forEach((t,i)=>{ const li=document.createElement('li');
+        li.innerHTML=`<span class="ttag">Т${i+1}</span><span class="ttxt">${t.text}</span><span class="tin"></span>`;
         tl.appendChild(li); });
+      const sub=document.createElement('div'); sub.className='subhead';
+      sub.textContent='По желание: задача за всяко празно поле (№). Отговорът е цифрата за полето.';
+      tl.parentNode.appendChild(sub);
+      const ol2=document.createElement('ol'); ol2.className='tlist';
+      emptyList.forEach(e=>{ const li=document.createElement('li');
+        li.innerHTML=`<span class="ttag num">№${e.idx}</span><span class="ttxt">${e.task.text}</span><span class="tin"></span>`;
+        ol2.appendChild(li); });
+      tl.parentNode.appendChild(ol2);
     } else if(taskInteractive){
       tl.style.display='none'; prog.innerHTML='Решени полета: <b class="ec">0</b>/'+emptyTotal;
     } else {
@@ -496,7 +508,7 @@ function renderView(){
     } else if(taskInteractive){
       gc.innerHTML='<span class="note">Кликни празно квадратче „?“, реши задачата и цифрата идва сама.</span>';
     } else if(printTask){
-      gc.innerHTML='<span class="note">За печат: Файл → Печат. Реши задачата за всяко поле по номера и впиши цифрата. Нищо не е попълнено предварително.</span>';
+      gc.innerHTML='<span class="note">За печат: Файл → Печат. Задължителни са деветте Т-задачи; задачите за празните полета (№) са по желание.</span>';
     } else if(mode==='print'){
       gc.innerHTML='<span class="note">За печат: Файл → Печат. Реши на хартия по ранг-правилото.</span>';
     }
