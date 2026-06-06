@@ -153,6 +153,10 @@ body.pt .rule{display:none}
 .frac>span{padding:0 .35em;line-height:1.22}
 .frac .fnum{border-bottom:1.6px solid currentColor}
 
+.snapexit{position:fixed;right:14px;bottom:14px;z-index:55;border:2px solid var(--ink);background:var(--ink);color:#fff;border-radius:999px;padding:8px 14px;font-family:'Fraunces';font-weight:600;cursor:pointer;box-shadow:0 8px 24px rgba(31,42,68,.25)}
+body:not(.snapshot) .snapexit{display:none}
+body.snapshot .controls,body.snapshot .credit,body.snapshot #mascot,body.snapshot #modeNote,body.snapshot .stamp,body.snapshot .tflag,body.snapshot .rule,body.snapshot .lead,body.snapshot .kicker{display:none!important}
+body.vlvl-easy .level:not(.lvl-easy),body.vlvl-medium .level:not(.lvl-medium),body.vlvl-hard .level:not(.lvl-hard){display:none}
 .topbar{position:sticky;top:0;z-index:40;background:rgba(255,251,242,.96);border-bottom:1px solid var(--line);margin:0 0 6px;padding:7px 2px;font-family:'Fraunces';font-weight:600;font-size:12.5px;color:var(--accent);letter-spacing:.02em;text-align:center}
 .topbar span:empty{display:none}
 @media print{.topbar{display:none}}
@@ -169,7 +173,8 @@ body.pt .rule{display:none}
 .rc-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 @media print{ body.rcard-print *{visibility:hidden!important} body.rcard-print #resultCard,body.rcard-print #resultCard *{visibility:visible!important} body.rcard-print #resultCard{position:absolute;left:0;top:0;transform:none;box-shadow:none;border:1px solid #000;width:auto;max-height:none} body.rcard-print .rc-actions{display:none!important} }
 </style></head><body><div class="wrap">
-<div class="topbar" id="topbar"><span data-who></span></div>
+<div class="topbar" id="topbar"><span data-who></span><span data-clock></span></div>
+<button id="snapExit" class="snapexit">✕ Изход от снимков изглед</button>
 <header class="masthead">
   <div class="mast-row">
     <div class="mast-main">
@@ -196,6 +201,8 @@ body.pt .rule{display:none}
   </div>
   <div class="controls">
     <div class="cgroup"><span class="lbl">Име</span><input id="studentName" class="nameinp" placeholder="Име на ученика" maxlength="40"></div>
+    <div class="cgroup"><span class="lbl">Покажи</span><div class="seg" id="segView">
+      <button data-v="all" class="active">Всички</button><button data-v="easy">Ниво 1</button><button data-v="medium">Ниво 2</button><button data-v="hard">Ниво 3</button></div></div>
     <div class="cgroup"><span class="lbl">Празни полета</span><div class="seg" id="segEmpty">
       <button data-v="logic" class="active">Реши с логика</button><button data-v="task">Реши със задача</button></div></div>
     <div class="cgroup teacher-only"><span class="lbl">Режим</span><div class="seg" id="segMode">
@@ -206,6 +213,7 @@ body.pt .rule{display:none}
       <button class="act teacher-only" id="printBtn">🖨 Печат</button>
       <button class="act" id="regen">↻ Нова задача</button>
       <button class="act" id="resultBtn">✓ Резултат</button>
+      <button class="act" id="snapBtn">📷 Снимка</button>
       <button class="act ghost teacher-only" id="toggle">Покажи отговорите</button>
       <button class="act ghost teacher-only" id="logBtn">📋 Дневник</button>
     </div>
@@ -589,6 +597,14 @@ function refreshWho(){ const nm=((document.getElementById('studentName')||{}).va
 function setSeg(id,val,cb){ const seg=document.getElementById(id);
   seg.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.v===val)); cb(val); }
 document.getElementById('segEmpty').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; setSeg('segEmpty',b.dataset.v,v=>{emptyMode=v;}); renderView();});
+let viewLevel='all';
+document.getElementById('segView').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; setSeg('segView',b.dataset.v,v=>{viewLevel=v; document.body.classList.remove('vlvl-easy','vlvl-medium','vlvl-hard'); if(v!=='all')document.body.classList.add('vlvl-'+v);});});
+(function(){ const snap=document.getElementById('snapBtn'), ex=document.getElementById('snapExit');
+  if(snap) snap.addEventListener('click',()=>document.body.classList.add('snapshot'));
+  if(ex) ex.addEventListener('click',()=>document.body.classList.remove('snapshot'));
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&document.body.classList.contains('snapshot')) document.body.classList.remove('snapshot'); }); })();
+function updateClock(){ const n=new Date(); const tt=' · '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); document.querySelectorAll('[data-clock]').forEach(el=>{el.textContent=tt;}); }
+try{ updateClock(); if(typeof setInterval!=='undefined') setInterval(updateClock,15000); }catch(e){}
 document.getElementById('segMode').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; setSeg('segMode',b.dataset.v,v=>{mode=v;}); renderView();});
 document.getElementById('regen').addEventListener('click',()=>{generate();renderView();});
 let printScope='all';
