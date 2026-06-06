@@ -161,6 +161,12 @@ body.vlvl-easy .level:not(.lvl-easy),body.vlvl-medium .level:not(.lvl-medium),bo
 .topbar span:empty{display:none}
 @media print{.topbar{display:none}}
 .who{font-family:'Fraunces';font-weight:600;font-size:13px;color:var(--accent);margin:3px 0 2px;min-height:16px}
+.lbl .req{color:#c0392b}
+.nameinp:placeholder-shown{border-color:#c0392b;background:#fff6f5}
+.nameinp.need{animation:nameshake .4s;border-color:#c0392b!important;background:#fff1ef}
+@keyframes nameshake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
+.toast{position:fixed;left:50%;top:64px;transform:translateX(-50%);z-index:70;background:#c0392b;color:#fff;font-family:'Fraunces';font-weight:600;font-size:13px;padding:8px 16px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.toast[hidden]{display:none}
 .nameinp{height:30px;border:1.5px solid var(--ink);border-radius:8px;padding:0 8px;font-size:13px;min-width:150px;font-family:inherit}
 .rcard{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(540px,92vw);max-height:86vh;overflow:auto;background:#fffdf7;border:2px solid var(--ink);border-radius:16px;box-shadow:0 20px 60px rgba(31,42,68,.3);padding:18px 18px 14px;z-index:60}
 .rcard[hidden]{display:none}
@@ -175,6 +181,7 @@ body.vlvl-easy .level:not(.lvl-easy),body.vlvl-medium .level:not(.lvl-medium),bo
 </style></head><body><div class="wrap">
 <div class="topbar" id="topbar"><span data-who></span><span data-clock></span></div>
 <button id="snapExit" class="snapexit">✕ Изход от снимков изглед</button>
+<div id="toast" class="toast" hidden></div>
 <header class="masthead">
   <div class="mast-row">
     <div class="mast-main">
@@ -200,7 +207,7 @@ body.vlvl-easy .level:not(.lvl-easy),body.vlvl-medium .level:not(.lvl-medium),bo
     <div class="scale"><b>1</b> най-малък отговор &nbsp;→&nbsp; <b>2</b> &nbsp;→&nbsp; <b>3</b> &nbsp;→ … →&nbsp; <b>9</b> най-голям отговор</div>
   </div>
   <div class="controls">
-    <div class="cgroup"><span class="lbl">Име</span><input id="studentName" class="nameinp" placeholder="Име на ученика" maxlength="40"></div>
+    <div class="cgroup"><span class="lbl">Име <span class="req">*</span></span><input id="studentName" class="nameinp" placeholder="Име на ученика" maxlength="40"></div>
     <div class="cgroup"><span class="lbl">Покажи</span><div class="seg" id="segView">
       <button data-v="all" class="active">Всички</button><button data-v="easy">Ниво 1</button><button data-v="medium">Ниво 2</button><button data-v="hard">Ниво 3</button></div></div>
     <div class="cgroup"><span class="lbl">Празни полета</span><div class="seg" id="segEmpty">
@@ -600,7 +607,7 @@ document.getElementById('segEmpty').addEventListener('click',e=>{const b=e.targe
 let viewLevel='all';
 document.getElementById('segView').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; setSeg('segView',b.dataset.v,v=>{viewLevel=v; document.body.classList.remove('vlvl-easy','vlvl-medium','vlvl-hard'); if(v!=='all')document.body.classList.add('vlvl-'+v);});});
 (function(){ const snap=document.getElementById('snapBtn'), ex=document.getElementById('snapExit');
-  if(snap) snap.addEventListener('click',()=>document.body.classList.add('snapshot'));
+  if(snap) snap.addEventListener('click',()=>{ if(!requireName()) return; document.body.classList.add('snapshot'); });
   if(ex) ex.addEventListener('click',()=>document.body.classList.remove('snapshot'));
   document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&document.body.classList.contains('snapshot')) document.body.classList.remove('snapshot'); }); })();
 function updateClock(){ const n=new Date(); const tt=' · '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); document.querySelectorAll('[data-clock]').forEach(el=>{el.textContent=tt;}); }
@@ -617,6 +624,9 @@ document.getElementById('printBtn').addEventListener('click',()=>{
 document.getElementById('toggle').addEventListener('click',()=>{const ak=document.getElementById('answerkey');ak.hidden=!ak.hidden;document.getElementById('toggle').textContent=ak.hidden?'Покажи отговорите':'Скрий отговорите';if(!ak.hidden)ak.scrollIntoView({behavior:'smooth'});});
 
 let lastResultText='';
+let _toastT; function flashMsg(m){ const el=document.getElementById('toast'); if(!el){ try{alert(m);}catch(e){} return; } el.textContent=m; el.hidden=false; try{clearTimeout(_toastT);}catch(e){} _toastT=setTimeout(()=>{el.hidden=true;},2400); }
+function requireName(){ const el=document.getElementById('studentName'); const nm=((el&&el.value)||'').trim();
+  if(!nm){ if(el){ el.classList.add('need'); try{el.focus();}catch(e){} setTimeout(()=>el.classList.remove('need'),1500); } flashMsg('Моля, въведи име, преди да продължиш.'); return ''; } return nm; }
 function gradeAll(){ return (STATE.graders||[]).map(g=>g()); }
 function buildResultText(name,time,rows){
   let s='Тригонометрично судоку — резултат\n';
@@ -626,7 +636,7 @@ function buildResultText(name,time,rows){
   return s+'\n'+(ok?'Всичко е решено вярно.':'Не всички нива са вярно.');
 }
 function showResult(){
-  const name=((document.getElementById('studentName')||{}).value||'').trim();
+  const name=requireName(); if(!name) return;
   const now=new Date(); const time=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
   const rows=gradeAll(); const ok=rows.length&&rows.every(r=>r.status==='вярно');
   let html='<h3>Резултат</h3><div class="rc-meta">Име: <b>'+(name||'—')+'</b> · Вариант <b>'+STATE.code+'</b> · '+STATE.date+' '+time+'</div>';
