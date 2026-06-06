@@ -133,6 +133,12 @@ footer{margin-top:38px;border-top:1px solid var(--line);padding-top:12px;font-si
  .credit{margin:14px 0 0} .credit .badge{background:#fff}
  .mascot-wrap{display:none!important}
 }
+.cell{position:relative}
+.clabel{position:absolute;top:1px;left:3px;font-size:8.5px;line-height:1;font-weight:600;color:var(--accent2);font-style:normal}
+.clabel.num{color:#b06a00}
+.stamp{font-family:'Fraunces';font-size:11px;letter-spacing:.05em;color:var(--ink2);margin-top:4px}
+.printhead{display:none}
+@media print{.printhead{display:block;margin:0 0 12px;padding-bottom:8px;border-bottom:1.5px solid var(--ink)}.printhead .ph-title{font-family:'Fraunces';font-weight:700;font-size:15px}.printhead .ph-meta{font-size:11px;color:#333;margin-top:2px}.printhead .ph-fields{font-size:12px;margin-top:8px;letter-spacing:.02em}}
 .cell.qnum{color:#b06a00;font-style:italic;font-size:12px;background:#fff}
 .subhead{font-family:'Fraunces';font-weight:600;font-size:13px;margin:14px 0 6px;color:var(--accent);border-top:1px dashed var(--line);padding-top:10px}
 .ttag.num{background:#fff3df;color:#b06a00}
@@ -182,8 +188,10 @@ body.pt .rule{display:none}
     </div>
   </div>
   <p class="note" id="modeNote"></p>
+  <div class="stamp" id="stamp"></div>
   <div class="credit"><span class="badge"><span class="star">✦</span>Идея: <b>Валя Витковска</b> · Реализация: <b>Claude</b><span class="star">✦</span></span></div>
 </header>
+<div class="printhead" id="printhead"></div>
 <div id="levels"></div>
 <div class="cellpop" id="cellPopup" hidden>
   <button class="cp-x" id="cpClose" aria-label="Затвори">×</button>
@@ -386,6 +394,9 @@ let emptyMode='logic', mode='interactive';
 function generate(){
   const bank=buildBank();
   const seed=(Date.now()^(Math.random()*1e9))>>>0; const rnd=mulberry32(seed);
+  const code=('000000'+(seed>>>0).toString(36).toUpperCase()).slice(-6);
+  const _n=new Date(), _p=x=>String(x).padStart(2,'0');
+  const date=`${_p(_n.getDate())}.${_p(_n.getMonth()+1)}.${_n.getFullYear()}`;
   const levels=[];
   for(const L of LEVELS){
     const {sol,puz}=makePuzzleAllDigits(rnd,L.clues);
@@ -405,7 +416,7 @@ function generate(){
     }
     levels.push({L,sol,puz,tasks,digitOfTask,tagOfDigit,valOfDigit,cellTask,cellTaskPrint});
   }
-  STATE={levels};
+  STATE={levels,code,date};
 }
 
 function renderView(){
@@ -413,6 +424,10 @@ function renderView(){
   const keysEl=document.getElementById('keys'); keysEl.innerHTML='';
   const printTask=(mode==='print' && emptyMode==='task');
   document.body.classList.remove('pt');
+  { const st=document.getElementById('stamp'); if(st) st.textContent='Вариант '+STATE.code+' · '+STATE.date;
+    const ph=document.getElementById('printhead'); if(ph) ph.innerHTML='<div class="ph-title">Тригонометрично судоку — функции на остър ъгъл</div>'+
+      '<div class="ph-meta">Вариант <b>'+STATE.code+'</b> · Генериран на '+STATE.date+'</div>'+
+      '<div class="ph-fields">Име: ________________________   Клас: ______   № ____   Дата: ____________</div>'; }
   document.getElementById('modeNote').textContent =
     (printTask?'Печат „Реши със задача“: реши ЗАДЪЛЖИТЕЛНО деветте задачи (Т1–Т9) и по ранг-правилото впиши Т-цифрите. Празните полета са номерирани — по желание реши задачата с номера на полето и впиши цифрата вместо да редиш по логика. Нищо не е попълнено предварително.'
      : mode==='print'?'Изглед за печат — реши деветте задачи и приложи ранг-правилото, после реши судокуто на хартия.'
@@ -437,10 +452,10 @@ function renderView(){
       if(c%3===2&&c!==8)cls+=' rb'; if(r%3===2&&r!==8)cls+=' bb';
       const isGiven=puz[p]!==0;
       if(printTask){
-        if(isGiven){ cls+=' tag isgiven'; cell.className=cls; cell.textContent=tagOfDigit[sol[p]]; }
-        else { const idx=emptyList.length+1; cls+=' qnum'; cell.className=cls; cell.textContent=idx; emptyList.push({idx,task:cellTaskPrint[p]}); }
+        if(isGiven){ cls+=' tag isgiven'; cell.className=cls; cell.innerHTML='<span class="clabel">'+tagOfDigit[sol[p]]+'</span>'; }
+        else { const idx=emptyList.length+1; cls+=' qnum'; cell.className=cls; cell.innerHTML='<span class="clabel num">№'+idx+'</span>'; emptyList.push({idx,task:cellTaskPrint[p]}); }
       } else if(mode==='print'){
-        if(isGiven){ cls+=' tag isgiven'; cell.className=cls; cell.textContent=tagOfDigit[sol[p]]; }
+        if(isGiven){ cls+=' tag isgiven'; cell.className=cls; cell.innerHTML='<span class="clabel">'+tagOfDigit[sol[p]]+'</span>'; }
         else { cell.className=cls; }
       } else if(taskInteractive){
         if(isGiven){ cls+=' given'; cell.className=cls; cell.textContent=sol[p]; }
@@ -519,7 +534,7 @@ function renderView(){
     let kg='<div class="grid">'; for(let p=0;p<81;p++){const r=p/9|0,c=p%9;let cls='cell sol'+(puz[p]!==0?' given':'');if(c%3===2&&c!==8)cls+=' rb';if(r%3===2&&r!==8)cls+=' bb';kg+=`<div class="${cls}">${sol[p]}</div>`;} kg+='</div>';
     const taskans=tasks.map((t,i)=>`Т${i+1}=${t.ans}`).join(' · ');
     const kb=document.createElement('div'); kb.className='keyblock key-'+L.key;
-    kb.innerHTML=`<h3>${L.no} · ${L.diff}</h3><p class="ansrow"><b>Отговори:</b> ${taskans}<br><b>Подредени (стойност→цифра):</b> ${ranked}</p>${kg}`;
+    kb.innerHTML=`<h3>${L.no} · ${L.diff} · Вариант ${STATE.code}</h3><p class="ansrow"><b>Отговори:</b> ${taskans}<br><b>Подредени (стойност→цифра):</b> ${ranked}</p>${kg}`;
     keysEl.appendChild(kb);
   }
   const ak=document.getElementById('answerkey'); ak.hidden=true; document.getElementById('toggle').textContent='Покажи отговорите';
