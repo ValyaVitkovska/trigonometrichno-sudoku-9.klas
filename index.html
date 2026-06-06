@@ -145,6 +145,9 @@ footer{margin-top:38px;border-top:1px solid var(--line);padding-top:12px;font-si
 .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .18em;line-height:1.05}
 .frac .fnum{border-bottom:1.6px solid currentColor;padding:0 .3em}
 .frac .fden{padding:1px .3em 0}
+body:not(.teacher) .teacher-only{display:none!important}
+body:not(.teacher) #answerkey{display:none!important}
+.tflag{display:inline-block;margin-top:6px;font-family:'Fraunces';font-size:11px;font-weight:600;background:var(--accent);color:#fff;border-radius:999px;padding:3px 10px;letter-spacing:.02em}
 body.pt .rule{display:none}
 .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .14em}
 .frac>span{padding:0 .35em;line-height:1.22}
@@ -177,18 +180,19 @@ body.pt .rule{display:none}
   <div class="controls">
     <div class="cgroup"><span class="lbl">Празни полета</span><div class="seg" id="segEmpty">
       <button data-v="logic" class="active">Реши с логика</button><button data-v="task">Реши със задача</button></div></div>
-    <div class="cgroup"><span class="lbl">Режим</span><div class="seg" id="segMode">
+    <div class="cgroup teacher-only"><span class="lbl">Режим</span><div class="seg" id="segMode">
       <button data-v="interactive" class="active">Интерактивно</button><button data-v="print">За печат</button></div></div>
-    <div class="cgroup"><span class="lbl">Печат на</span><div class="seg" id="segPrint">
+    <div class="cgroup teacher-only"><span class="lbl">Печат на</span><div class="seg" id="segPrint">
       <button data-v="all" class="active">Всички</button><button data-v="easy">Ниво 1</button><button data-v="medium">Ниво 2</button><button data-v="hard">Ниво 3</button></div></div>
     <div class="actions">
-      <button class="act" id="printBtn">🖨 Печат</button>
+      <button class="act teacher-only" id="printBtn">🖨 Печат</button>
       <button class="act" id="regen">↻ Нова задача</button>
-      <button class="act ghost" id="toggle">Покажи отговорите</button>
+      <button class="act ghost teacher-only" id="toggle">Покажи отговорите</button>
     </div>
   </div>
   <p class="note" id="modeNote"></p>
   <div class="stamp" id="stamp"></div>
+  <span class="tflag teacher-only" id="tflag">👩‍🏫 Учителски режим — Ctrl+Shift+U за изход</span>
   <div class="credit"><span class="badge"><span class="star">✦</span>Идея: <b>Валя Витковска</b> · Реализация: <b>Claude</b><span class="star">✦</span></span></div>
 </header>
 <div class="printhead" id="printhead"></div>
@@ -553,6 +557,22 @@ document.getElementById('printBtn').addEventListener('click',()=>{
   setTimeout(()=>window.print(), 60);
 });
 document.getElementById('toggle').addEventListener('click',()=>{const ak=document.getElementById('answerkey');ak.hidden=!ak.hidden;document.getElementById('toggle').textContent=ak.hidden?'Покажи отговорите':'Скрий отговорите';if(!ak.hidden)ak.scrollIntoView({behavior:'smooth'});});
+
+let teacher=false;
+function setTeacher(on){
+  teacher=!!on;
+  document.body.classList.toggle('teacher', teacher);
+  if(!teacher){
+    if(typeof mode!=='undefined' && mode!=='interactive'){ setSeg('segMode','interactive',v=>{mode=v;}); }
+    const ak=document.getElementById('answerkey'); if(ak) ak.hidden=true;
+    const tg=document.getElementById('toggle'); if(tg) tg.textContent='Покажи отговорите';
+    renderView();
+  }
+}
+document.addEventListener('keydown',e=>{ if(e.ctrlKey&&e.shiftKey&&(e.code==='KeyU'||e.key==='U'||e.key==='u')){ e.preventDefault(); setTeacher(!teacher); } });
+(function(){ let n=0,tm; const st=document.getElementById('stamp');
+  if(st) st.addEventListener('click',()=>{ n++; clearTimeout(tm); tm=setTimeout(()=>{n=0;},1200); if(n>=3){ n=0; setTeacher(!teacher); } }); })();
+try{ if(typeof location!=='undefined' && /teacher|uchitel|%D1%83%D1%87%D0%B8%D1%82%D0%B5%D0%BB|учител/i.test(location.hash||'')) setTeacher(true); }catch(e){}
 
 let cpCur=null;
 function positionPopup(cell){ const pop=document.getElementById('cellPopup'); const r=cell.getBoundingClientRect(); const w=280,h=180;
