@@ -396,8 +396,10 @@ function generate(){
     const dpool={}, didx={};
     for(let d=1;d<=9;d++){ dpool[d]=digitPool(bank,L.key,d).slice(); for(let i=dpool[d].length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[dpool[d][i],dpool[d][j]]=[dpool[d][j],dpool[d][i]];} didx[d]=0; }
     const cellTask={}, cellTaskPrint={}; let pi=0;
-    for(let p=0;p<81;p++){ if(puz[p]===0){ cellTask[p]=poolI[pi%poolI.length]; pi++;
-      const d=sol[p]; cellTaskPrint[p]=dpool[d][didx[d]%dpool[d].length]; didx[d]++; } }
+    for(let p=0;p<81;p++){
+      const d=sol[p]; cellTaskPrint[p]=dpool[d][didx[d]%dpool[d].length]; didx[d]++;   // task for EVERY cell
+      if(puz[p]===0){ cellTask[p]=poolI[pi%poolI.length]; pi++; }
+    }
     levels.push({L,sol,puz,tasks,digitOfTask,tagOfDigit,valOfDigit,cellTask,cellTaskPrint});
   }
   STATE={levels};
@@ -409,7 +411,7 @@ function renderView(){
   const printTask=(mode==='print' && emptyMode==='task');
   document.body.classList.toggle('pt', printTask);
   document.getElementById('modeNote').textContent =
-    (printTask?'Печат „Реши със задача“: всяко празно поле има номер; реши задачата със същия номер от списъка и запиши получената цифра в полето.'
+    (printTask?'Печат „Реши със задача“: всяко поле има номер (нищо не е попълнено). Реши задачата със същия номер от списъка и запиши получената цифра в полето. Накрая всеки ред, стълб и блок трябва да съдържат цифрите 1–9 — това е самопроверката.'
      : mode==='print'?'Изглед за печат — реши деветте задачи и приложи ранг-правилото, после реши судокуто на хартия.'
      : emptyMode==='task'?'Празни полета „със задача“: кликни празно квадратче, реши неговата задача и цифрата се поставя сама. Всяко поле има различна задача.'
      : 'Празни полета „с логика“: реши деветте задачи, за да се появят началните цифри, после довърши судокуто по логиката.');
@@ -432,8 +434,7 @@ function renderView(){
       if(c%3===2&&c!==8)cls+=' rb'; if(r%3===2&&r!==8)cls+=' bb';
       const isGiven=puz[p]!==0;
       if(printTask){
-        if(isGiven){ cls+=' given'; cell.className=cls; cell.textContent=sol[p]; }
-        else { const idx=emptyList.length+1; cls+=' tag'; cell.className=cls; cell.textContent=idx; emptyList.push({idx,task:cellTaskPrint[p]}); }
+        const idx=emptyList.length+1; cls+=' tag'; cell.className=cls; cell.textContent=idx; emptyList.push({idx,task:cellTaskPrint[p]});
       } else if(mode==='print'){
         if(isGiven){ cls+=' tag isgiven'; cell.className=cls; cell.textContent=tagOfDigit[sol[p]]; }
         else { cell.className=cls; }
@@ -454,7 +455,7 @@ function renderView(){
     const tl=sec.querySelector('.tlist'); let solved=0; const solvedSet=new Set();
     const prog=sec.querySelector('.prog'); const h3=sec.querySelector('.tasks h3');
     if(printTask){
-      h3.textContent='Задачи за празните полета (отговорът е цифрата за полето)';
+      h3.textContent='Задачи за всички полета (отговорът е цифрата за съответното поле)';
       prog.style.display='none';
       emptyList.forEach(e=>{ const li=document.createElement('li');
         li.innerHTML=`<span class="ttag">${e.idx}</span><span class="ttxt">${e.task.text}</span><span class="tin"></span>`;
@@ -495,7 +496,7 @@ function renderView(){
     } else if(taskInteractive){
       gc.innerHTML='<span class="note">Кликни празно квадратче „?“, реши задачата и цифрата идва сама.</span>';
     } else if(printTask){
-      gc.innerHTML='<span class="note">За печат: Файл → Печат. Реши задачите по номера и впиши цифрите в полетата.</span>';
+      gc.innerHTML='<span class="note">За печат: Файл → Печат. Реши задачата за всяко поле по номера и впиши цифрата. Нищо не е попълнено предварително.</span>';
     } else if(mode==='print'){
       gc.innerHTML='<span class="note">За печат: Файл → Печат. Реши на хартия по ранг-правилото.</span>';
     }
